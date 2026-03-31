@@ -5,15 +5,15 @@
   "description": "Lightweight Twitch chat overlay with animated avatar for streamers",
   "author": {
     "name": "didevlab",
-    "url": "https://github.com/didevlab"
+    "url": "https://github.com/solvelab"
   },
-  "homepage": "https://github.com/didevlab/keeping-an-eye-on-the-chat",
+  "homepage": "https://github.com/solvelab/keeping-an-eye-on-the-chat",
   "repository": {
     "type": "git",
-    "url": "https://github.com/didevlab/keeping-an-eye-on-the-chat.git"
+    "url": "https://github.com/solvelab/keeping-an-eye-on-the-chat.git"
   },
   "bugs": {
-    "url": "https://github.com/didevlab/keeping-an-eye-on-the-chat/issues"
+    "url": "https://github.com/solvelab/keeping-an-eye-on-the-chat/issues"
   },
   "license": "MIT",
   "main": "dist/main/index.js",
