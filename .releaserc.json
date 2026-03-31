@@ -1,5 +1,6 @@
 {
   "branches": ["master"],
+  "repositoryUrl": "https://github.com/didevlab/keeping-an-eye-on-the-chat.git",
   "tagFormat": "v${version}",
   "plugins": [
     "@semantic-release/commit-analyzer",
