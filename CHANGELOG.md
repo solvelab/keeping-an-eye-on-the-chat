@@ -1,3 +1,12 @@
+## [1.1.2](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v1.1.1...v1.1.2) (2026-03-31)
+
+
+### Bug Fixes
+
+* **ci:** add persist-credentials false for semantic-release ([729b73f](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/729b73fa442a9ba64be0d0c708e661d2d572bb2e))
+* **ci:** set repositoryUrl for semantic-release GitHub URL match ([9ddf3af](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/9ddf3afe7970893439c417eba56d632b45ca7adb))
+* **ci:** update repository URLs from didevlab to solvelab org ([e390cfe](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/e390cfee19e6643b4a45ef17868ef232edc50047))
+
 ## [1.1.1](https://github.com/didevlab/keeping-an-eye-on-the-chat/compare/v1.1.0...v1.1.1) (2026-01-02)
 
 
