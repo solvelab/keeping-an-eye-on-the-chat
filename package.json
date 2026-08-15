@@ -27,6 +27,8 @@
     "start:overlay": "cross-env OVERLAY_DEBUG=0 DIAGNOSTICS=0 electron .",
     "start:diag": "cross-env OVERLAY_DEBUG=1 DIAGNOSTICS=1 electron .",
     "typecheck": "tsc -p config/tsconfig.main.json --noEmit && tsc -p config/tsconfig.preload.json --noEmit && tsc -p config/tsconfig.renderer.json --noEmit",
+    "build:test": "tsc -p config/tsconfig.test.json",
+    "test": "npm run build:test && node scripts/run-tests.js",
     "build:ts": "tsc -p config/tsconfig.main.json && tsc -p config/tsconfig.preload.json && tsc -p config/tsconfig.renderer.json && npm run copy-assets",
     "copy-assets": "node scripts/copy-assets.js",
     "build:win": "npm run build:ts && npm run build:win:zip",
@@ -61,7 +63,9 @@
     },
     "linux": {
       "icon": "logo.png",
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "category": "Utility"
     }
   }

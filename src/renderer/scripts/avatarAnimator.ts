@@ -48,7 +48,8 @@ export class AvatarAnimator {
   private lookDirection: LookDirection;
   private lookOffsetPx: number;
   private lookThreshold: number;
-  private blinkTimer: ReturnType<typeof setTimeout> | null;
+  // Scheduled with window.setTimeout, whose handle is a plain number.
+  private blinkTimer: number | null;
   private blinkTimeline: GSAPTimeline | null;
   private talkTimeline: GSAPTimeline | null;
   private lookTween: GSAPTween | null;
@@ -905,4 +906,8 @@ export class AvatarAnimator {
   }
 }
 
-window.AvatarAnimator = AvatarAnimator;
+// Exposed on window for the overlay's <script> tag loader. Guarded so the module
+// can also be required from a plain Node test runner.
+if (typeof window !== 'undefined') {
+  window.AvatarAnimator = AvatarAnimator;
+}

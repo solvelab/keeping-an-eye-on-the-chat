@@ -20,10 +20,16 @@ export class ConfigStore {
   private readonly backupPath: string;
   private readonly diagnostics: boolean;
 
-  constructor(diagnostics = false) {
-    const userDataPath = app.getPath('userData');
-    this.configPath = path.join(userDataPath, CONFIG_FILENAME);
-    this.backupPath = path.join(userDataPath, BACKUP_FILENAME);
+  /**
+   * @param diagnostics Enable diagnostic logging.
+   * @param userDataPath Directory holding the config files. Defaults to Electron's
+   *   `userData` path; tests pass a temporary directory so the store can run
+   *   outside an Electron runtime.
+   */
+  constructor(diagnostics = false, userDataPath?: string) {
+    const baseDir = userDataPath ?? app.getPath('userData');
+    this.configPath = path.join(baseDir, CONFIG_FILENAME);
+    this.backupPath = path.join(baseDir, BACKUP_FILENAME);
     this.diagnostics = diagnostics;
   }
 

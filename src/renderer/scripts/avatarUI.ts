@@ -291,4 +291,8 @@ export class AvatarUI {
   }
 }
 
-window.AvatarUI = AvatarUI;
+// Exposed on window for the overlay's <script> tag loader. Guarded so the module
+// can also be required from a plain Node test runner.
+if (typeof window !== 'undefined') {
+  window.AvatarUI = AvatarUI;
+}

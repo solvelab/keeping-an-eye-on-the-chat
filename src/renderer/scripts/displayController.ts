@@ -2,7 +2,7 @@ import type { ChatMessage } from '../../shared/types';
 
 type Phase = 'idle' | 'showing' | 'exiting';
 
-interface DisplayCallbacks {
+export interface DisplayCallbacks {
   playEntranceAnimation?: (message: ChatMessage) => Promise<void>;
   playAttentionPause?: (durationMs: number) => Promise<void>;
   playReadingAnimation?: (message: ChatMessage) => Promise<number>;
@@ -10,7 +10,7 @@ interface DisplayCallbacks {
   cancel?: () => void;
 }
 
-interface DisplayControllerOptions {
+export interface DisplayControllerOptions {
   displaySeconds?: number;
   exitAnimationMs?: number;
   attentionPauseMs?: number;
@@ -23,7 +23,7 @@ interface DisplayControllerOptions {
   maxQueueLength?: number;
 }
 
-interface DisplayState {
+export interface DisplayState {
   activeMessage: ChatMessage | null;
   queueLength: number;
   totalReceived: number;
@@ -369,4 +369,8 @@ export class DisplayController {
   }
 }
 
-window.DisplayController = DisplayController;
+// The overlay loads this file through a <script> tag, so the class is published on
+// window. Guarded so the same module can be required from a plain Node test runner.
+if (typeof window !== 'undefined') {
+  window.DisplayController = DisplayController;
+}
