@@ -8,6 +8,7 @@ import { app, BrowserWindow, screen, Tray, Menu, nativeImage } from 'electron';
 import { TwitchChatSource } from './chatSource';
 import { setupConfigIPC, getCurrentConfig } from './ipcHandlers';
 import { createConfigWindow, isConfigWindowOpen, focusConfigWindow } from './configWindow';
+import { resolveTargetDisplay } from '../shared/displays';
 import type { ChatMessage } from '../shared/types';
 import type { AppConfig, Language } from '../config/types';
 
@@ -135,12 +136,16 @@ const createOverlayWindow = (config: AppConfig): void => {
   // Debug overlay only if explicitly enabled in config or via env var
   const debugOverlay = config.overlayDebug || process.env.OVERLAY_DEBUG === '1';
 
-  // Find the target display based on config (0 or invalid = use primary)
+  // Find the target display based on config (0, invalid or disconnected = primary)
   const displays = screen.getAllDisplays();
   const primaryDisplay = screen.getPrimaryDisplay();
-  let targetDisplay = displays.find((d) => d.id === config.displayId);
-  if (!targetDisplay) {
-    targetDisplay = primaryDisplay;
+  const targetDisplay = resolveTargetDisplay(displays, config.displayId, primaryDisplay);
+
+  if (config.diagnostics) {
+    console.info(
+      `[diagnostics] Overlay display: configured=${JSON.stringify(config.displayId)} ` +
+        `resolved=${targetDisplay.id} primary=${primaryDisplay.id}`
+    );
   }
 
   const { width, height, x, y } = targetDisplay.workArea;
