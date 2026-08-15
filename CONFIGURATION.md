@@ -132,25 +132,34 @@ npm run build:win
 2. Copy `packaging/windows/*.bat` to the extracted folder
 3. Edit the batch file:
 
+> 💡 The executable is named after `build.productName` in `package.json` — currently
+> **`EyeOnChat.exe`**. The shipped batch files keep it in a single `APP_EXE` variable so a rename
+> is a one-line change.
+
 **run-overlay.bat:**
 ```batch
 @echo off
+set "APP_EXE=EyeOnChat.exe"
 set "TWITCH_CHAT_URL=https://www.twitch.tv/popout/YOURNAME/chat?popout="
 set "DISPLAY_SECONDS=5"
 set "OVERLAY_ANCHOR=bottom-left"
-"Keeping an Eye on the Chat.exe"
+start "" "%~dp0%APP_EXE%"
 ```
 
 **run-diag.bat:**
 ```batch
 @echo off
+set "APP_EXE=EyeOnChat.exe"
 set "TWITCH_CHAT_URL=https://www.twitch.tv/popout/YOURNAME/chat?popout="
 set "DIAGNOSTICS=1"
 set "OVERLAY_DEBUG=1"
-"Keeping an Eye on the Chat.exe"
+start "" "%~dp0%APP_EXE%"
 ```
 
 4. Double-click the `.bat` file to launch
+
+`set-channel.example.bat` lists every supported environment variable, commented out, as a starting
+point.
 
 ### Option 3: PowerShell
 
@@ -159,14 +168,14 @@ set "OVERLAY_DEBUG=1"
 $env:TWITCH_CHAT_URL="https://www.twitch.tv/popout/YOURNAME/chat?popout="
 
 # Run the app
-& ".\Keeping an Eye on the Chat.exe"
+& ".\EyeOnChat.exe"
 ```
 
 ### Option 4: Command Prompt
 
 ```cmd
 set TWITCH_CHAT_URL=https://www.twitch.tv/popout/YOURNAME/chat?popout=
-"Keeping an Eye on the Chat.exe"
+"EyeOnChat.exe"
 ```
 
 ### Option 5: System-wide (Persistent)
