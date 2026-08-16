@@ -1006,8 +1006,10 @@ class ConfigApp {
    */
   private async applyPreset(presetId: string): Promise<void> {
     const result = await window.configAPI.applyPreset(presetId);
-    if (result.success && result.config) {
-      this.config = { ...result.config };
+    if (result.success) {
+      // A preset only declares the knobs it cares about; everything else the
+      // user has already typed — the Twitch URL above all — must survive.
+      this.config = window.configValues.mergePresetConfig(this.config, result.config);
       this.updateFormFromConfig();
       await this.validateAndUpdate();
       this.isDirty = true;

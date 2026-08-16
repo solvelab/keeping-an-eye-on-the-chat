@@ -52,8 +52,28 @@ export function isNumericSelect(meta: CoercibleFieldMeta): boolean {
   return meta.type === 'select' && typeof meta.default === 'number';
 }
 
+/**
+ * Overlay a preset onto the configuration the user is currently editing.
+ *
+ * A preset declares only the handful of timing knobs it cares about. Replacing
+ * the whole config with `{...defaults, ...preset}` — which is what the wizard
+ * used to do — also reset `twitchChatUrl` to an empty string, so picking a
+ * preset silently erased the one required field, and reset `language` while the
+ * UI stayed in the language the user had chosen.
+ */
+export function mergePresetConfig<T extends object>(
+  current: T,
+  preset: Partial<T> | undefined | null
+): T {
+  if (!preset) {
+    return { ...current };
+  }
+
+  return { ...current, ...preset };
+}
+
 // Published for the wizard's <script> tag loader; guarded so the module can also
 // be required from a plain Node test runner.
 if (typeof window !== 'undefined') {
-  window.configValues = { coerceFieldValue, isNumericSelect };
+  window.configValues = { coerceFieldValue, isNumericSelect, mergePresetConfig };
 }

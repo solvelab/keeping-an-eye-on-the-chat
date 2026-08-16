@@ -88,16 +88,19 @@ export function setupConfigIPC(diagnostics = false): void {
     return testTwitchConnection(url, diagnosticsEnabled);
   });
 
-  // Apply a preset
+  // Apply a preset.
+  //
+  // Returns the preset's *partial* values. Merging is the renderer's job,
+  // because only the wizard knows the unsaved form state the user is editing;
+  // returning a full config here is what used to wipe twitchChatUrl.
   ipcMain.handle('config:applyPreset', (_event, presetId: string) => {
-    const config = applyPreset(presetId);
     const preset = PRESETS.find((p) => p.id === presetId);
 
     if (!preset) {
       return { success: false, error: 'Preset not found' };
     }
 
-    return { success: true, config };
+    return { success: true, config: { ...preset.config } };
   });
 
   // Get defaults
