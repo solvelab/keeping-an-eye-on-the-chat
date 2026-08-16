@@ -1,6 +1,6 @@
 {
   "name": "keeping-an-eye-on-the-chat",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "description": "Lightweight Twitch chat overlay with animated avatar for streamers",
   "author": {

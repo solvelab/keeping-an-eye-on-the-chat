@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.1.0...v2.1.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* **tray:** stop and restart the overlay without quitting the app ([#47](https://github.com/solvelab/keeping-an-eye-on-the-chat/issues/47)) ([074c761](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/074c761ed01ea7c4fd5dd3f6f08e4f00e9bf6279))
+
 # [2.1.0](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.0.1...v2.1.0) (2026-08-16)
 
 
