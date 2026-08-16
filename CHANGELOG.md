@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.2.0...v2.3.0) (2026-08-16)
+
+
+### Features
+
+* **config:** preview the bubble in the wizard, and open the Overlay section ([#50](https://github.com/solvelab/keeping-an-eye-on-the-chat/issues/50)) ([6d17f43](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/6d17f43d5174a297f82f697f51616eeeee97fd5e))
+
 # [2.2.0](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.1.1...v2.2.0) (2026-08-16)
 
 
