@@ -36,6 +36,7 @@
 
 - 🎭 **Animated Avatar** — Cute character with lip-sync, blinking, and expressions powered by GSAP
 - 💬 **Chat Bubbles** — Clean speech bubbles with smooth enter/exit animations
+- 🏷️ **Author Name Styling** — Five ways to set the chatter's name apart from their message, chosen in the wizard and previewed live
 - 🔔 **Notification Sound** — Customizable audio alert with test preview, volume control, and quick mute from System Tray
 - 🎯 **Transparent Overlay** — Click-through window that sits on top of your game/content
 - ⚡ **Lightweight** — Minimal resource usage, optimized for streaming
@@ -57,6 +58,7 @@
 | System Tray with quick controls | Complex filtering rules |
 | Multi-monitor display selection | |
 | Configuration wizard with collapsible UI | |
+| Author name styling, chosen and previewed | |
 | Graceful error handling | |
 
 ## 🚀 Getting Started
@@ -242,7 +244,7 @@ complete choice:
 │   │   ├── 📁 assets/          # Static assets (notification sounds)
 │   │   └── 📁 config/          # Configuration wizard
 │   │       ├── index.html
-│   │       ├── 📁 scripts/     # configApp.ts, configValues.ts
+│   │       ├── 📁 scripts/     # configApp, configValues, configForm, bubblePreview
 │   │       ├── 📁 styles/      # Dark theme
 │   │       └── 📁 assets/      # Wizard logo
 │   ├── 📁 config/              # Configuration logic
@@ -252,10 +254,11 @@ complete choice:
 │   │   ├── store.ts            # JSON persistence
 │   │   └── merge.ts            # Config merge logic
 │   └── 📁 shared/              # Shared between processes
-│       ├── 📁 types/           # ChatMessage, OverlayConfig
+│       ├── 📁 types/           # ChatMessage, OverlayConfig, AuthorStyle
 │       ├── boundedIdSet.ts     # Bounded dedup cache
 │       ├── displays.ts         # Monitor resolution
-│       └── hostnames.ts        # Domain suffix matching
+│       ├── platforms.ts        # Supported platforms and their labels
+│       └── hostnames.ts        # Domain matching, URL -> platform
 ├── 📁 tests/                   # Unit tests (node:test)
 ├── 📁 dist/                    # Compiled JavaScript (generated)
 ├── 📁 dist-tests/              # Compiled tests (generated)

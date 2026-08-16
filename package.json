@@ -2,7 +2,7 @@
   "name": "keeping-an-eye-on-the-chat",
   "version": "2.3.0",
   "private": true,
-  "description": "Lightweight Twitch chat overlay with animated avatar for streamers",
+  "description": "Lightweight Twitch and Kick chat overlay with animated avatar for streamers",
   "author": {
     "name": "didevlab",
     "url": "https://github.com/solvelab"
@@ -29,6 +29,8 @@
     "lint": "eslint src tests scripts eslint.config.js",
     "check-packaging": "node scripts/check-packaging.js",
     "check-commits": "node scripts/check-commit-notes.js",
+    "check-doc-paths": "node scripts/check-doc-paths.js",
+    "capture-screenshots": "electron scripts/capture-screenshots.js",
     "typecheck": "tsc -p config/tsconfig.main.json --noEmit && tsc -p config/tsconfig.preload.json --noEmit && tsc -p config/tsconfig.renderer.json --noEmit",
     "build:test": "node scripts/clean-dist-tests.js && tsc -p config/tsconfig.test.json",
     "test": "npm run build:test && node scripts/run-tests.js",

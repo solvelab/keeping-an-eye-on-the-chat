@@ -14,7 +14,6 @@ launch.
 The single source of truth is `src/config/schema.ts`: every field's type, default, validation rule,
 environment variable name and UI metadata live there, and everything else in this capability reads
 from it.
-
 ## Requirements
 ### Requirement: Configuration Inventory Documentation
 The system SHALL maintain a documented inventory of every configuration variable or parameter that affects behavior, including env vars, flags, arguments, internal toggles, modes, URLs, sizes, positions, opacity, always-on-top, shortcuts, and auto-start settings. The inventory MUST include the name, type, accepted values, default, impact, where it is read (file/source), and examples.
@@ -52,18 +51,14 @@ The system SHALL offer built-in presets (for example: Streamer Default, Minimal,
 - **THEN** the configuration fields update to the preset values and are ready to save or start
 
 ### Requirement: Configuration UI Before Main Flow
-The system MUST display a configuration window before starting the main overlay/chat flow. If saved config exists, it MUST be loaded and shown; if not, defaults are used and the required field is highlighted. The main flow MUST NOT start until validation passes.
+The system MUST display a configuration window before starting the main overlay/chat flow. If saved
+config exists, it MUST be loaded and shown; if not, defaults are used and the fields still needed are
+highlighted. The main flow MUST NOT start until validation passes.
 
 #### Scenario: First run blocks start until required field
 - **WHEN** the app starts without saved config
-- **THEN** the configuration window appears and Start is blocked until TWITCH_CHAT_URL is valid
-
-### Requirement: Required TWITCH_CHAT_URL Validation and Test
-TWITCH_CHAT_URL MUST be the only required field. The UI MUST validate it as non-empty and a valid URL, provide immediate feedback, and show placeholder and example values. The UI MUST include a Test Connection action that attempts to load the URL in a webview or headless context and returns a clear success or error message.
-
-#### Scenario: Invalid URL blocks start and test shows error
-- **WHEN** TWITCH_CHAT_URL is empty or invalid
-- **THEN** Start is blocked and the Test Connection result shows a readable error
+- **THEN** the configuration window appears and Start is blocked until at least one chat source URL
+  is valid
 
 ### Requirement: Start, Cancel, and Dirty State Handling
 The UI MUST provide Start and Cancel/Exit actions. Start MUST validate, apply the final merged config, close or hide the config window, and start the existing flow without regressions. Cancel MUST exit the app without starting. The UI MUST track dirty state and prompt on exit or start when unsaved changes exist, offering Save and Start, Start Without Saving, or Cancel.
@@ -80,11 +75,20 @@ The UI MUST indicate fields overridden by ENV or CLI with a clear badge such as 
 - **THEN** the field shows an override badge and the effective value
 
 ### Requirement: Streamer-Focused UX and Accessibility
-The configuration UI SHALL be visually clear for streamers, with a header showing app name and status, sectioned layout with icons and tooltips, and an overlay preview where applicable. Advanced options MUST be hidden by default and discoverable. The UI MUST support keyboard navigation (Tab, Shift+Tab, Enter, Esc), focus the TWITCH_CHAT_URL field on open, use consistent labels, and present clear error messages with adequate contrast.
+The configuration UI SHALL be visually clear for streamers, with a header showing app name and
+status, and a sectioned layout with icons and tooltips. The sections holding the settings a streamer
+changes first MUST be open on arrival; advanced options MUST be collapsed but discoverable. A setting
+whose effect is visual MUST be previewable from the UI rather than described only in words. The UI
+MUST support keyboard navigation (Tab, Shift+Tab, Enter, Esc), focus the first chat source field on
+open, use consistent labels, and present clear error messages with adequate contrast.
 
 #### Scenario: Keyboard navigation is supported
 - **WHEN** a user navigates using only the keyboard
 - **THEN** all controls are reachable and activation works with Enter or Esc where applicable
+
+#### Scenario: A visual setting is discoverable
+- **WHEN** the configuration window opens for the first time
+- **THEN** the settings that change the overlay's appearance are visible without expanding a section
 
 ### Requirement: Observability and Diagnostics
 The system SHALL log info, warn, and error events for configuration load, save, validation, preset application, and final effective config. Logging MUST respect any diagnostics or debug mode when enabled.
@@ -106,4 +110,59 @@ If the configuration window cannot be shown, the system MUST follow a documented
 #### Scenario: UI failure triggers fallback
 - **WHEN** the config UI fails to open
 - **THEN** the app follows the documented fallback behavior and does not hang silently
+
+### Requirement: Chat Source URL Validation and Test
+At least one chat source URL MUST be configured. A Twitch URL alone, a Kick URL alone, or both MUST
+satisfy validation; neither field is required on its own. Each URL MUST be validated as a well-formed
+URL whose host belongs to that platform by suffix match, with immediate feedback, a placeholder and
+an example. Each URL field MUST offer its own Test action that loads the URL and returns a readable
+success or error.
+
+#### Scenario: Only one platform is configured
+- **WHEN** a Kick URL is entered and the Twitch URL is left empty
+- **THEN** the configuration is valid and Start is enabled
+
+#### Scenario: No platform is configured
+- **WHEN** both URL fields are empty
+- **THEN** Start is blocked and the same message is shown on both fields, naming both platforms
+
+#### Scenario: A lookalike host is entered
+- **WHEN** a URL's host merely contains a platform's domain as a substring
+- **THEN** validation rejects it and Start stays blocked
+
+### Requirement: Author Name Presentation
+The system SHALL let the streamer choose how a chatter's name is set apart from their message, from a
+fixed set of designed treatments, and SHALL default to one that is legible without being loud. The
+name and the message MUST never render touching, in any treatment.
+
+#### Scenario: A treatment is chosen
+- **WHEN** the streamer selects a different treatment and starts the overlay
+- **THEN** the bubble renders the name in that treatment
+
+#### Scenario: A configuration predates the setting
+- **WHEN** a stored configuration has no author-style value
+- **THEN** the default treatment is used and the configuration stays valid
+
+#### Scenario: A long unbroken name is displayed
+- **WHEN** a name of the maximum length the platforms allow contains no spaces
+- **THEN** it wraps rather than widening the bubble, and does not collide with the origin indicator
+
+### Requirement: Bubble Preview In The Configuration UI
+The configuration UI SHALL show a live preview of the speech bubble alongside the settings that
+change its appearance, so a visual choice is made by looking rather than by reading a description.
+The preview MUST be rendered with the overlay's own styles, so that it cannot diverge from what the
+overlay draws.
+
+#### Scenario: A setting that changes the bubble is edited
+- **WHEN** the author-name treatment or the bubble width is changed
+- **THEN** the preview updates immediately, without starting the overlay
+
+#### Scenario: The overlay's styling changes
+- **WHEN** a bubble style is changed in the overlay's stylesheet
+- **THEN** the preview changes with it, because it is styled by that same stylesheet
+
+#### Scenario: The stress case is inspected
+- **WHEN** the streamer asks the preview for a long name
+- **THEN** the preview shows the longest name the platforms allow, so the layout can be judged before
+  going live
 

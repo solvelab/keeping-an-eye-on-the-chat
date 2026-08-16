@@ -35,3 +35,39 @@ Checklist — the log strings below are the ones the code actually emits:
 While waiting for the next message the avatar enters its "waiting" expression, which logs
 `[diagnostics] avatar waitingEye=left|right` and `[diagnostics] avatar squintScaleY=…`. Those values
 are seeded from the message id, so the same message always produces the same expression.
+
+## Bubble appearance QA
+
+The animation checklist above is driven by log lines; the bubble's appearance is not. These are read
+off the screen, and they are the checks that caught real defects.
+
+Set the treatment in the wizard's **Overlay Settings → Author's Name**, or with `AUTHOR_STYLE`, and
+run through all five: `plain`, `tinted`, `label`, `subtle` (the default), `chip`.
+
+- **The name never touches the message.** The gap is `margin`, not a space character, so it is easy
+  to lose in a new treatment. Inline treatments hold roughly 8 px; `label` puts the name on its own
+  line.
+- **A 25-character name with no spaces wraps.** That is the longest both platforms allow. It must not
+  widen the bubble past `BUBBLE_MAX_WIDTH`, and must not run under the platform badge in the
+  top-right corner — `label` reserves space on the right for exactly this reason.
+- **The colon appears only where it reads as punctuation** — `plain` and `tinted`. On `chip` or
+  `label` it would look like a typo.
+- **The badge shows the right platform.** With both configured, messages from each carry their own
+  colour: Twitch purple, Kick green.
+- **An emote-only message shows nothing rather than an empty bubble** — those are dropped before the
+  queue, on both platforms.
+
+## Wizard preview QA
+
+The wizard previews the bubble in **Overlay Settings**, below Author's Name
+(`src/renderer/config/scripts/bubblePreview.ts`).
+
+- **Changing the treatment changes the preview immediately**, with no Start and no restart.
+- **The Long name button** loads the 25-character case, so the stress case can be judged before going
+  live.
+- **The preview matches the overlay.** It is styled by the overlay's own `avatarUI.css`, so any
+  difference between the preview and what a real message looks like is a bug in that arrangement, not
+  a matter of taste. The quickest way to confirm the wiring is still intact: change a bubble rule in
+  `src/renderer/styles/avatarUI.css` and check that the preview moves with it.
+- **The badge follows the configured URLs** — Twitch alone, Kick alone, or alternating when both are
+  filled in.
