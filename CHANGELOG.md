@@ -1,3 +1,22 @@
+# [2.0.0](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v1.1.2...v2.0.0) (2026-08-16)
+
+
+* 🐛 fix(packaging): launch EyeOnChat.exe from the Windows batch files ([26d0bdb](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/26d0bdbea57115f3c5e3b4127c9e70f018c22194))
+
+
+### BREAKING CHANGES
+
+* in the changelog), but the launchers and CONFIGURATION.md kept
+calling "Keeping an Eye on the Chat.exe", which no release contains — so both
+batch files failed for anyone following the documented flow.
+
+The name now lives in a single APP_EXE variable per file, the launch resolves
+it relative to the script (%~dp0) so it works from any working directory, and
+a missing binary produces a readable message instead of a silent failure.
+
+set-channel.example.bat now lists every environment variable the schema
+declares, not just four.
+
 ## [1.1.2](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v1.1.1...v1.1.2) (2026-03-31)
 
 
