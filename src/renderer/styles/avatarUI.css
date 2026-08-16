@@ -97,6 +97,7 @@
 }
 
 .avatar-ui__bubble {
+  position: relative;
   max-width: var(--bubble-max-width);
   padding: 12px 16px;
   background: rgba(14, 18, 22, 0.9);
@@ -112,4 +113,49 @@
 .avatar-ui__text {
   white-space: normal;
   word-break: break-word;
+}
+
+/*
+ * Where the message came from.
+ *
+ * Absolutely positioned so it can never shift the bubble text or the avatar
+ * layout, which the animation is sensitive to. Empty when the platform is
+ * unknown, and then it renders nothing at all.
+ */
+.avatar-ui__platform {
+  position: absolute;
+  top: -9px;
+  right: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font: 600 10px/1.4 "Arial", sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(10, 14, 18, 0.95);
+  background: rgba(0, 255, 255, 0.75);
+  text-shadow: none;
+  pointer-events: none;
+}
+
+.avatar-ui__platform:empty {
+  display: none;
+}
+
+/* Platform colours, so the origin reads at a glance without being loud. */
+.avatar-ui__bubble[data-platform='twitch'] {
+  border-color: rgba(145, 70, 255, 0.55);
+}
+
+.avatar-ui__bubble[data-platform='twitch'] .avatar-ui__platform {
+  background: rgba(145, 70, 255, 0.95);
+  color: rgba(255, 255, 255, 0.98);
+}
+
+.avatar-ui__bubble[data-platform='kick'] {
+  border-color: rgba(83, 252, 24, 0.55);
+}
+
+.avatar-ui__bubble[data-platform='kick'] .avatar-ui__platform {
+  background: rgba(83, 252, 24, 0.95);
+  color: rgba(10, 20, 6, 0.95);
 }

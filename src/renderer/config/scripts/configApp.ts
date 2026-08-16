@@ -351,9 +351,10 @@ class ConfigApp {
     // Form click events (delegated for dynamically created buttons)
     form?.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      // Test connection button (delegated event)
-      if (target.id === 'testConnectionBtn' || target.closest('#testConnectionBtn')) {
-        void this.testConnection();
+      // Test connection button — which platform is carried on the button
+      const urlField = window.configForm.chatUrlFieldOfButton(target);
+      if (urlField) {
+        void this.testConnection(urlField);
       }
       // Test sound button (delegated event)
       if (target.id === 'testSoundBtn' || target.closest('#testSoundBtn')) {
@@ -600,10 +601,13 @@ class ConfigApp {
   }
 
   /**
-   * Test connection to Twitch URL.
+   * Test that a platform's chat URL is reachable.
+   *
+   * The platform is derived from the URL by the main process, so this only has
+   * to say which field was asked about.
    */
-  private async testConnection(): Promise<void> {
-    const url = this.config.twitchChatUrl;
+  private async testConnection(field: ConfigKey): Promise<void> {
+    const url = this.config[field] as string;
     if (!url || !url.trim()) {
       this.showAlert('error', this.t.msgEnterUrlFirst);
       return;

@@ -3,7 +3,7 @@
  * Single source of truth for validation, defaults, and UI metadata.
  */
 
-import { isTwitchUrl } from '../shared/hostnames';
+import { isKickUrl, isTwitchUrl } from '../shared/hostnames';
 import type { AppConfig, ConfigFieldMeta, ConfigSection } from './types';
 
 /**
@@ -91,12 +91,12 @@ export const CONFIG_SCHEMA: Record<keyof AppConfig, ConfigFieldMeta<AppConfig[ke
     default: '',
     envVar: 'TWITCH_CHAT_URL',
     section: 'basic',
-    required: true,
     placeholder: 'https://www.twitch.tv/popout/yourname/chat?popout=',
     validate: (value: unknown): string | null => {
       const str = value as string;
       if (!str || !str.trim()) {
-        return 'Twitch Chat URL is required';
+        // Emptiness is settled across both platform URLs, not per field.
+        return null;
       }
       let url: URL;
       try {
@@ -110,6 +110,39 @@ export const CONFIG_SCHEMA: Record<keyof AppConfig, ConfigFieldMeta<AppConfig[ke
       }
       if (!url.pathname.includes('/popout/') && !url.pathname.includes('/chat')) {
         return 'URL should be a Twitch chat popout URL';
+      }
+      return null;
+    },
+  },
+
+  kickChatUrl: {
+    key: 'kickChatUrl',
+    label: 'Kick Chat URL',
+    description:
+      'The popout chat URL from your Kick channel (e.g., https://kick.com/popout/yourname/chat)',
+    type: 'string',
+    default: '',
+    envVar: 'KICK_CHAT_URL',
+    section: 'basic',
+    placeholder: 'https://kick.com/popout/yourname/chat',
+    validate: (value: unknown): string | null => {
+      const str = value as string;
+      if (!str || !str.trim()) {
+        // Emptiness is settled across both platform URLs, not per field.
+        return null;
+      }
+      let url: URL;
+      try {
+        url = new URL(str);
+      } catch {
+        return 'Invalid URL format';
+      }
+      // Suffix match, not substring: kick.com.attacker.example must not pass.
+      if (!isKickUrl(str)) {
+        return 'URL must be from kick.com';
+      }
+      if (!url.pathname.includes('/popout/') && !url.pathname.includes('/chat')) {
+        return 'URL should be a Kick chat popout URL';
       }
       return null;
     },

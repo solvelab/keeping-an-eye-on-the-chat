@@ -3,8 +3,9 @@
 ## Purpose
 
 **Keeping an Eye on the Chat** (packaged as `EyeOnChat`) is a desktop overlay for streamers. It
-watches a Twitch popout chat page, and shows one message at a time in a speech bubble next to a
-small animated avatar, on top of whatever is on screen.
+watches a Twitch and/or a Kick popout chat page, and shows one message at a time in a speech bubble
+next to a small animated avatar, on top of whatever is on screen. Both platforms can be watched at
+once; each message carries the platform it came from.
 
 The point is attention: a streamer focused on a game does not read the chat panel. A single message
 with a sound and a moving mouth is hard to miss.
@@ -76,8 +77,9 @@ lightweight, and every addition is weighed against that.
 
 ## Domain Context
 
-- **Popout chat** — Twitch's standalone chat page (`/popout/<channel>/chat`). The app observes its
-  DOM in a hidden window; there is no Twitch API integration and no authentication.
+- **Popout chat** — a platform's standalone chat page: `twitch.tv/popout/<channel>/chat` or
+  `kick.com/popout/<channel>/chat`. The app observes its DOM in a hidden window; there is no API
+  integration and no authentication on either platform.
 - **Overlay** — a transparent, click-through, always-on-top window. It is invisible to the mouse and
   absent from the taskbar, so the **system tray** is the only way to interact with a running app.
 - **Viseme** — a mouth shape. The avatar's lip-sync picks weighted viseme presets per syllable; it
@@ -87,8 +89,10 @@ lightweight, and every addition is weighed against that.
 
 ## Important Constraints
 
-- **Twitch's DOM is not an API.** It can change without notice. Selectors are lists of fallbacks and
-  observer attachment has a 10 s timeout with a clear error, because breakage is expected.
+- **A streaming site's DOM is not an API.** It can change without notice. Selectors are lists of
+  fallbacks and observer attachment has a 10 s timeout with a clear error, because breakage is
+  expected. Kick goes further: it has no semantic hooks at all, so its extraction is structural
+  (the `:` separator) rather than class-based.
 - **A stream runs for hours.** Anything that accumulates per message must be bounded; unbounded
   caches are a defect, not a trade-off.
 - **The overlay must never freeze silently.** A wedged overlay is worse than a crash, because the
@@ -102,7 +106,8 @@ lightweight, and every addition is weighed against that.
 
 | Dependency | Role | Failure mode |
 |---|---|---|
-| Twitch popout chat page | the only message source | selectors change → observer attach times out after 10 s |
+| Twitch popout chat page | a message source | selectors change → observer attach times out after 10 s |
+| Kick popout chat page | a message source | markup changes → rows stop parsing, or attach times out after 10 s |
 | GitHub Actions | lint, typecheck, test, build, release | a failed run blocks the release, not the app |
 | PayPal | donation link in the README and the wizard | cosmetic |
 

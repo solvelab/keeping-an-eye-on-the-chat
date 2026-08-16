@@ -139,7 +139,28 @@ export function validateConfig(config: AppConfig): ValidationErrors {
     }
   }
 
+  applyCrossFieldRules(config, errors);
+
   return errors;
+}
+
+/**
+ * Rules that no single field can express.
+ *
+ * A per-field `required` cannot say "at least one of these", so the platform
+ * URLs are validated together: the app has nothing to observe when both are
+ * empty, but either one alone is a complete configuration.
+ */
+function applyCrossFieldRules(config: AppConfig, errors: ValidationErrors): void {
+  const twitch = typeof config.twitchChatUrl === 'string' ? config.twitchChatUrl.trim() : '';
+  const kick = typeof config.kickChatUrl === 'string' ? config.kickChatUrl.trim() : '';
+
+  if (twitch === '' && kick === '') {
+    const message = 'Enter a Twitch or a Kick chat URL';
+    // Reported on both fields, so whichever one the user is looking at says so.
+    errors.twitchChatUrl = message;
+    errors.kickChatUrl = message;
+  }
 }
 
 /**

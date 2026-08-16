@@ -9,13 +9,13 @@
 | | |
 |---|---|
 | **Type** | Electron desktop application |
-| **Purpose** | Twitch chat overlay with animated avatar |
+| **Purpose** | Twitch and Kick chat overlay with animated avatar |
 | **Stack** | TypeScript, Electron, GSAP |
 | **Target** | Streamers who want chat visibility |
 
 ### Core Features
 
-- 👁️ Observes Twitch popout chat via DOM
+- 👁️ Observes Twitch and/or Kick popout chat via DOM, both at once if configured
 - 💬 Displays messages one at a time with speech bubble
 - 🎭 Animated avatar with lip-sync, blinking, expressions
 - 🪟 Transparent click-through overlay window
@@ -29,7 +29,9 @@
 src/
 ├── 📁 main/               # Electron main process
 │   ├── index.ts           # Entry point, overlay window, system tray
-│   ├── chatSource.ts      # Twitch DOM observer (hidden BrowserWindow)
+│   ├── chatSource.ts      # Chat source base (hidden BrowserWindow, retry, polling)
+│   ├── twitchChatSource.ts # Twitch DOM observer
+│   ├── kickChatSource.ts  # Kick DOM observer
 │   ├── configWindow.ts    # Configuration wizard window
 │   ├── ipcHandlers.ts     # IPC communication handlers
 │   └── testConnection.ts  # "Test" button in the wizard
@@ -80,7 +82,7 @@ CI runs lint, commit-notes, typecheck, check-packaging, test and build, in that 
 ## 🔄 Data Flow
 
 ```
-1. chatSource.ts    → Observes Twitch chat DOM in a hidden BrowserWindow
+1. twitch/kickChatSource → Each observes its platform DOM in its own hidden BrowserWindow
 2. IPC              → Messages sent to renderer process
 3. displayController.ts → Manages queue and timing
 4. avatarUI.ts      → Renders avatar + speech bubble
@@ -118,7 +120,7 @@ variable.
 | Aspect | Detail |
 |--------|--------|
 | **Overlay Window** | Transparent, ignores mouse events |
-| **Chat Source** | MutationObserver injected into a hidden BrowserWindow |
+| **Chat Source** | MutationObserver injected into a hidden BrowserWindow, one per platform; one failing does not stop the other |
 | **Deduplication** | Three layers: a WeakSet of DOM nodes, then a bounded id cache in each process |
 | **Queue** | Limited size, drops oldest when full |
 | **Display Sequence** | entrance → attention pause → reading → display timer → exit; failures are contained and the next message still runs |

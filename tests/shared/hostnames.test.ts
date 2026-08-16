@@ -7,10 +7,12 @@ import assert from 'node:assert/strict';
 
 import {
   ERR_ABORTED,
+  KICK_DOMAIN_SUFFIXES,
   SUPPRESSED_DOMAIN_SUFFIXES,
   TWITCH_DOMAIN_SUFFIXES,
   getHostname,
   hostnameMatches,
+  isKickUrl,
   isSuppressedUrl,
   isTwitchUrl,
 } from '../../src/shared/hostnames';
@@ -73,4 +75,20 @@ test('schema: the Twitch URL validator rejects lookalike hosts', async () => {
   assert.equal(validate('https://twitch.tv.attacker.example/popout/x/chat'), 'URL must be from twitch.tv');
   assert.equal(validate('https://nottwitch.tv/popout/x/chat'), 'URL must be from twitch.tv');
   assert.equal(validate('https://evil.io/?q=twitch.tv/popout/x/chat'), 'URL must be from twitch.tv');
+});
+
+test('isKickUrl: accepts real Kick URLs and rejects lookalikes', () => {
+  assert.equal(isKickUrl('https://kick.com/popout/x/chat'), true);
+  assert.equal(isKickUrl('https://files.kick.com/emote.png'), true);
+
+  assert.equal(isKickUrl('https://kick.com.attacker.example/popout/x/chat'), false);
+  assert.equal(isKickUrl('https://notkick.com/popout/x/chat'), false);
+  assert.equal(isKickUrl('https://www.twitch.tv/popout/x/chat'), false);
+  assert.equal(isKickUrl('garbage'), false);
+});
+
+test('the two platform domain lists do not overlap', () => {
+  const overlap = KICK_DOMAIN_SUFFIXES.filter((s) => TWITCH_DOMAIN_SUFFIXES.includes(s));
+
+  assert.deepEqual(overlap, []);
 });

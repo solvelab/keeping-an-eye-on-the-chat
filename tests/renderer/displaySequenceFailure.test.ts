@@ -12,7 +12,7 @@ import type { DisplayCallbacks } from '../../src/renderer/scripts/displayControl
 import type { ChatMessage } from '../../src/shared/types';
 
 function message(id: string, text = 'hello'): ChatMessage {
-  return { id, user: 'viewer', text, timestamp: 1 };
+  return { id, platform: 'twitch', user: 'viewer', text, timestamp: 1 };
 }
 
 const settle = (ms = 150): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));

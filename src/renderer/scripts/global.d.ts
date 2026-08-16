@@ -7,6 +7,11 @@ declare global {
     AvatarAnimator: typeof import('./avatarAnimator').AvatarAnimator;
     AvatarUI: typeof import('./avatarUI').AvatarUI;
     NotificationSound: typeof import('./notificationSound').NotificationSound;
+    platforms: {
+      PLATFORMS: readonly import('../../shared/platforms').Platform[];
+      PLATFORM_LABELS: Record<import('../../shared/platforms').Platform, string>;
+      isPlatform: (value: unknown) => boolean;
+    };
     boundedIdSet: {
       BoundedIdSet: typeof import('../../shared/boundedIdSet').BoundedIdSet;
       OVERLAY_SEEN_ID_LIMIT: number;

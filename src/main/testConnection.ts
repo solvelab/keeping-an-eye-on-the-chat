@@ -4,7 +4,8 @@
  */
 
 import { BrowserWindow } from 'electron';
-import { ERR_ABORTED, isSuppressedUrl, isTwitchUrl } from '../shared/hostnames';
+import { ERR_ABORTED, isSuppressedUrl, platformOfUrl } from '../shared/hostnames';
+import { PLATFORM_LABELS } from '../shared/platforms';
 import type { ConnectionTestResult } from '../config/types';
 
 const TEST_TIMEOUT_MS = 10000;
@@ -72,10 +73,13 @@ export function isAbortedNavigation(error: unknown): boolean {
 }
 
 /**
- * Test if a Twitch chat URL is accessible.
- * Creates a hidden window, loads the URL, and checks for success or failure.
+ * Test whether a chat URL is reachable.
+ *
+ * Platform-agnostic: the platform is derived from the URL's host, so the same
+ * button works for every supported platform and a URL belonging to none is
+ * rejected before a window is opened.
  */
-export async function testTwitchConnection(
+export async function testChatConnection(
   url: string,
   diagnostics = false
 ): Promise<ConnectionTestResult> {
@@ -88,9 +92,11 @@ export async function testTwitchConnection(
     return { success: false, error: 'Invalid URL format', latencyMs: null };
   }
 
-  // Suffix match, not substring: twitch.tv.attacker.example must not pass.
-  if (!isTwitchUrl(url)) {
-    return { success: false, error: 'URL must be from twitch.tv', latencyMs: null };
+  // Suffix match, not substring: twitch.tv.attacker.example belongs to nobody.
+  const platform = platformOfUrl(url);
+  if (!platform) {
+    const supported = Object.values(PLATFORM_LABELS).join(' or ');
+    return { success: false, error: `URL must be from ${supported}`, latencyMs: null };
   }
 
   return new Promise((resolve) => {

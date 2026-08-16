@@ -3,6 +3,12 @@
 Traces the exact code path for the first chat bubble that becomes visible, from app boot to the
 bubble hiding again.
 
+The trace below follows **Twitch**. Kick is identical from `onMessage` onwards — the two differ only
+in the injected observer script and the DOM they read, which is the whole point of the split between
+`chatSource.ts` (the base) and `twitchChatSource.ts` / `kickChatSource.ts`. Where they differ, this
+document says so. When both are configured, the two sources run side by side in separate hidden
+windows and feed the same overlay.
+
 Every path below is a real file in this repository. If a rename makes one of them wrong, this
 document is wrong — fix it in the same commit.
 
@@ -14,9 +20,9 @@ sequenceDiagram
   participant Main as src/main/index.ts
   participant Wizard as config wizard
   participant Overlay as src/renderer/index.html
-  participant Chat as TwitchChatSource
+  participant Chat as TwitchChatSource / KickChatSource
   participant Hidden as hidden chat BrowserWindow
-  participant DOM as Twitch chat DOM
+  participant DOM as platform chat DOM
   participant DC as DisplayController
   participant UI as AvatarUI
 
@@ -27,13 +33,13 @@ sequenceDiagram
   Main->>Overlay: createOverlayWindow() -> loadFile(renderer/index.html?debug=0|1)
   Main->>Overlay: did-finish-load -> send('set-muted'), send('set-config')
   Overlay->>DC: waitForConfig() resolves, controller built
-  Main->>Chat: new TwitchChatSource(url).start()
-  Chat->>Hidden: loadURL(twitchChatUrl)
+  Main->>Chat: startChatSources(config) -> one source per configured URL
+  Chat->>Hidden: loadURL(twitchChatUrl / kickChatUrl)
   Hidden-->>Chat: dom-ready / did-finish-load
   Chat->>Hidden: executeJavaScript(buildObserverScript)
   Hidden->>DOM: MutationObserver.observe(container)
   DOM-->>Hidden: new chat node added
-  Hidden->>Hidden: __twitchChatQueue.push(item)
+  Hidden->>Hidden: __chatQueue.push(item)
   Chat->>Hidden: poll every 250ms -> splice the queue
   Chat->>Main: onMessage(normalized)
   Main->>Overlay: send('chat-message')
@@ -64,15 +70,17 @@ sequenceDiagram
    `waitForConfig()`; if nothing arrives within 2 s it falls back to `parseEnvConfig()`.
 7. **T6** — The inline bootstrap in `src/renderer/index.html` awaits `waitForConfig()` and builds
    `NotificationSound`, `AvatarUI` and `DisplayController`, wiring the display callbacks.
-8. **T7** — In parallel, `TwitchChatSource.start()` (`src/main/chatSource.ts`) opens a **hidden**
-   `BrowserWindow` (`sandbox: true`, `contextIsolation: true`), loads the popout URL and starts a
-   250 ms poller.
+8. **T7** — In parallel, `startChatSources()` (`src/main/index.ts`) creates one source per
+   configured URL — `TwitchChatSource`, `KickChatSource`, or both. Each `start()` runs in its own
+   `try/catch`, so a source that throws does not stop the others. `BrowserChatSource.start()`
+   (`src/main/chatSource.ts`) opens a **hidden** `BrowserWindow` (`sandbox: true`,
+   `contextIsolation: true`), loads the popout URL and starts a 250 ms poller.
 9. **T8** — On `dom-ready` or `did-finish-load`, `attachObserverWithRetry()` injects the observer
    script with exponential backoff (250 ms → 2 s) until a chat container matches or 10 s elapse.
 10. **T9** — The injected script marks every message node already on the page as seen, then attaches
     a `MutationObserver`. Backlog messages are therefore never displayed.
 11. **T10** — The first new node appears. The script extracts `id`, `user`, `text` and `timestamp`
-    and pushes an item onto `window.__twitchChatQueue`.
+    and pushes an item onto `window.__chatQueue`.
 12. **T11** — The next poll tick splices the queue, `normalizeMessage()` trims and guarantees an id,
     the bounded `seenIds` cache rejects duplicates, and `onMessage` forwards it.
 13. **T12** — The main process sends `chat-message` over IPC; the overlay calls
@@ -95,8 +103,14 @@ only a fallback for the case where the main process never sends one.
 
 ## Chat connection and observation
 
-Twitch chat is loaded in a hidden `BrowserWindow` — not a `webview` or an iframe. The observer is
-injected with `webContents.executeJavaScript()` and attaches to the first container that matches:
+Each chat page is loaded in its own hidden `BrowserWindow` — not a `webview` or an iframe. The
+observer is injected with `webContents.executeJavaScript()` and retried with backoff until it
+attaches. Both platforms push onto the same page global, `window.__chatQueue`, which the main
+process drains every 250 ms.
+
+### Twitch selectors (`src/main/twitchChatSource.ts`)
+
+Attaches to the first container that matches:
 
 - **Container**: `[data-test-selector="chat-scrollable-area__message-container"]`,
   `[data-a-target="chat-scrollable-area__message-container"]`, `[role="log"]`,
@@ -112,28 +126,57 @@ injected with `webContents.executeJavaScript()` and attaches to the first contai
   `.chat-line__status`
 - **Timestamp**: `time`, `[data-a-target="chat-timestamp"]`
 
-No messages appear when: the URL is empty or not a `twitch.tv` host (suffix match — a lookalike host
-is rejected), the hidden window fails to load, or no container matches within 10 seconds.
+### Kick extraction (`src/main/kickChatSource.ts`)
+
+Kick exposes no semantic hook for the author or the text — only Tailwind utility classes, which
+change with the design. A spike measured `span.font-bold` matching 27 of 28 rows and returning the
+`":"` separator, so a selector chain there would look healthy and extract punctuation. Extraction is
+**structural** instead:
+
+- **Container**: `#chatroom-messages`, `[data-testid="chatroom-messages"]`
+- **Rows**: the children of the container's current wrapper, re-resolved on every scan. Kick replaces
+  that wrapper shortly after the page becomes interactive, so an observer bound to the wrapper it
+  found at attach time reports success and then delivers nothing — measured, and the reason the
+  observer watches the container with `subtree: true`
+- **Author and text**: the row body's children are `[timestamp, author, ":", text…]`. The first
+  element whose text is exactly `":"` is the separator; the author is what precedes it and the text
+  is everything after it, joined
+- **Ignored**: rows with no separator (subscriptions, host notices, moderation) and rows with no text
+  (emote-only messages, which the Twitch source drops as well)
+- **Id**: `data-index` restarts at 0 on every page load, so a token minted at attach time prefixes it
+- **Timestamp**: Kick renders a localised clock string and hides it, so `capturedAt` is used
+
+Measured on a busy channel: 49 of 56 chat messages captured over two minutes (~88%). That is far
+above what the overlay can display, since it shows one message at a time.
+
+No messages appear when: the URL is empty or its host does not match the platform's domains (suffix
+match — a lookalike host is rejected), the hidden window fails to load, or no container matches
+within 10 seconds. A failure in one source is logged with its platform name and leaves the other
+source running.
 
 ## Message normalization
 
 In the injected script, `user` and `text` are required; `id` and `timestamp` are optional, and every
 item also carries `capturedAt`.
 
-`TwitchChatSource.normalizeMessage()` then trims, rejects empty values and guarantees both fields:
+`BrowserChatSource.normalizeMessage()` then trims, rejects empty values and guarantees both fields:
 
 - `timestamp`: parsed DOM timestamp → `capturedAt` → `Date.now()`
-- `id`: DOM id → generated `local-<counter>-<timestamp>-<hash>`
+- `id`: `<platform>-<DOM id>` → `<platform>-local-<counter>-<timestamp>-<hash>`
 
-The message that reaches the renderer has exactly `id`, `user`, `text`, `timestamp`. There is no
-avatar image in it — the avatar is a styled DOM element.
+Ids are namespaced by platform because a page's own id is only unique within that page, and two
+sources feed one queue.
+
+The message that reaches the renderer has exactly `id`, `platform`, `user`, `text`, `timestamp`.
+There is no avatar image in it — the avatar is a styled DOM element. The overlay shows `platform` as
+a small badge on the bubble, positioned absolutely so it cannot shift the layout.
 
 ## Deduplication (three layers)
 
 | Layer | Where | Bounded by |
 |---|---|---|
-| `WeakSet` of DOM nodes | injected script | garbage collection, as Twitch prunes its DOM |
-| `seenIds` | `TwitchChatSource` | `BoundedIdSet`, 2000 ids |
+| `WeakSet` of DOM nodes | injected script | garbage collection, as the platform prunes its DOM |
+| `seenIds` | each chat source | `BoundedIdSet`, 2000 ids, per source |
 | `seenIds` | `DisplayController` | `BoundedIdSet`, 500 ids |
 
 The two id caches evict oldest-first (`src/shared/boundedIdSet.ts`), so a multi-hour stream does not
@@ -143,7 +186,7 @@ grow them without limit.
 
 `displaySeconds` becomes `displayMs` in the controller. The timers involved in one message are:
 
-- `setInterval(…, 250)` in `TwitchChatSource.startPolling()`
+- `setInterval(…, 250)` in `BrowserChatSource.startPolling()`, one per source
 - `setTimeout(displayMs)` in `waitDisplayDuration()`
 - `setTimeout(exitAnimationMs)` in `waitExitDuration()`, only when no `playExitAnimation` callback
   is supplied
@@ -166,13 +209,21 @@ belonging to the current one.
 
 ```bash
 TWITCH_CHAT_URL="https://www.twitch.tv/popout/<channel>/chat" DIAGNOSTICS=1 npm run start:diag
+
+# Kick, or both at once
+KICK_CHAT_URL="https://kick.com/popout/<channel>/chat" DIAGNOSTICS=1 npm run start:diag
 ```
+
+Pick a channel that is **live**. Only new messages are displayed, so an offline channel produces
+nothing however full its chat page looks.
 
 - `OVERLAY_DEBUG=1` adds the debug frame and live counters (received, displayed, dropped, ignored,
   truncated) to the overlay.
 - `DEVTOOLS=1` opens DevTools for the overlay window in development.
-- Main-process `[diagnostics]` lines come from `src/main/index.ts` and `src/main/chatSource.ts`:
-  observer attachment, parsed messages, and the resolved monitor.
+- Main-process `[diagnostics]` lines come from `src/main/index.ts` and the chat sources
+  (`chatSource.ts`, `twitchChatSource.ts`, `kickChatSource.ts`): observer attachment, parsed
+  messages, and the resolved monitor. Every source line names its platform, so two running at once
+  stay readable.
 - Renderer `[diagnostics]` lines come from `src/renderer/scripts/displayController.ts` and
   `avatarAnimator.ts` — see [AVATAR_QA.md](AVATAR_QA.md) for the full list.
 - Chat text is logged **only** when diagnostics or overlay debug are enabled.
@@ -184,7 +235,10 @@ TWITCH_CHAT_URL="https://www.twitch.tv/popout/<channel>/chat" DIAGNOSTICS=1 npm 
 | App lifecycle, overlay window, system tray | `src/main/index.ts` |
 | Configuration wizard window | `src/main/configWindow.ts` |
 | IPC handlers | `src/main/ipcHandlers.ts` |
-| Hidden chat window, observer, polling, normalization | `src/main/chatSource.ts` |
+| Hidden chat window, observer retry, polling, normalization | `src/main/chatSource.ts` |
+| Twitch DOM observer | `src/main/twitchChatSource.ts` |
+| Kick DOM observer | `src/main/kickChatSource.ts` |
+| Supported platforms and their labels | `src/shared/platforms.ts` |
 | Monitor resolution | `src/shared/displays.ts` |
 | Overlay IPC bridge | `src/preload/index.ts` |
 | Overlay bootstrap | `src/renderer/index.html` |
