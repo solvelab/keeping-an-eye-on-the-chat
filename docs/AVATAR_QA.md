@@ -4,6 +4,8 @@ Run with diagnostics:
 
 ```bash
 TWITCH_CHAT_URL="https://www.twitch.tv/popout/<channel>/chat" DIAGNOSTICS=1 npm run start:diag
+# or, for Kick
+KICK_CHAT_URL="https://kick.com/popout/<channel>/chat" DIAGNOSTICS=1 npm run start:diag
 ```
 
 Diagnostics logs come from two places, with different prefixes:

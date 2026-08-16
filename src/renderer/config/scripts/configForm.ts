@@ -50,6 +50,26 @@ export const SOUND_DEPENDENT_FIELDS: ConfigKey[] = [
   'notificationSoundVolume',
 ];
 
+/**
+ * Fields holding a chat URL, each of which gets its own Test button.
+ *
+ * Exported so the controller can resolve a clicked button back to its field
+ * without parsing the id by hand.
+ */
+export const CHAT_URL_FIELDS: ConfigKey[] = ['twitchChatUrl', 'kickChatUrl'];
+
+/** The id of the Test button belonging to a chat URL field. */
+export function testButtonId(key: ConfigKey): string {
+  return `test-${key}`;
+}
+
+/** The chat URL field a Test button belongs to, or null. */
+export function chatUrlFieldOfButton(element: HTMLElement | null): ConfigKey | null {
+  const button = element ? element.closest('[data-field]') : null;
+  const field = button instanceof HTMLElement ? button.dataset.field : undefined;
+  return field && CHAT_URL_FIELDS.includes(field as ConfigKey) ? (field as ConfigKey) : null;
+}
+
 export class ConfigFormRenderer {
   private readonly ctx: FormRenderContext;
 
@@ -353,13 +373,15 @@ export class ConfigFormRenderer {
 
     container.appendChild(input);
 
-    // Add Test Connection button for twitchChatUrl
-    if (meta.key === 'twitchChatUrl') {
+    // Every platform URL gets its own Test button, keyed by field: with more
+    // than one URL a shared id would collide and the wrong URL would be tested.
+    if (CHAT_URL_FIELDS.includes(meta.key)) {
       const testBtn = document.createElement('button');
       testBtn.type = 'button';
       testBtn.className = 'btn btn--secondary btn--small';
       testBtn.textContent = this.t.btnTest;
-      testBtn.id = 'testConnectionBtn';
+      testBtn.id = testButtonId(meta.key);
+      testBtn.dataset.field = meta.key;
       testBtn.disabled = disabled;
       container.appendChild(testBtn);
     }
@@ -455,5 +477,11 @@ export class ConfigFormRenderer {
 // Published for the wizard's <script> tag loader; guarded so the module can also
 // be required from a plain Node test runner.
 if (typeof window !== 'undefined') {
-  window.configForm = { ConfigFormRenderer, SOUND_DEPENDENT_FIELDS };
+  window.configForm = {
+    ConfigFormRenderer,
+    SOUND_DEPENDENT_FIELDS,
+    CHAT_URL_FIELDS,
+    testButtonId,
+    chatUrlFieldOfButton,
+  };
 }

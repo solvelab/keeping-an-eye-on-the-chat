@@ -15,7 +15,12 @@ Complete guide for configuring **Keeping an Eye on the Chat**.
 
 ## 🚀 Quick Start
 
-### 1. Get Your Twitch Chat URL
+### 1. Get Your Chat URL
+
+Fill in Twitch, Kick, or both. At least one is needed; an empty field simply means that platform is
+not watched.
+
+**Twitch**
 
 1. Go to your Twitch channel
 2. Click the **Chat Settings** (gear icon) in chat
@@ -26,6 +31,19 @@ The URL should look like:
 ```
 https://www.twitch.tv/popout/YOURNAME/chat?popout=
 ```
+
+**Kick**
+
+1. Go to your Kick channel
+2. Open the chat's menu and choose **Popout Chat**
+
+The URL should look like:
+```
+https://kick.com/popout/YOURNAME/chat
+```
+
+> ⚠️ Each configured platform runs its own hidden browser page. Measured on Linux, the second one
+> adds roughly **280–530 MB** of memory, so configure only the platforms you stream on.
 
 ### 2. Run the App
 
@@ -45,7 +63,7 @@ The built-in wizard provides an intuitive way to configure all settings:
 
 | Section | Description |
 |---------|-------------|
-| 🔧 **Basic** | Twitch Chat URL (required) |
+| 🔧 **Basic** | Twitch Chat URL and Kick Chat URL — at least one is required |
 | 🎨 **Overlay** | Display (monitor), position, margins, bubble width, attention pause |
 | 🔔 **Sound** | Enable/disable, output device, custom file, volume |
 | ⚡ **Performance** | Message length, ignored users, command prefix |
@@ -56,7 +74,7 @@ The built-in wizard provides an intuitive way to configure all settings:
 - 🌍 **Language Toggle** — Switch between English and Portuguese
 - 🎯 **Presets** — Adjust the timing knobs without touching anything else
 - ✅ **Validation** — Real-time error checking; Start stays disabled until the config is valid
-- 🧪 **Test Connection** — Verify your Twitch URL loads
+- 🧪 **Test Connection** — Each URL field has its own Test button
 - 🖥️ **Display preview** — Selecting a monitor flashes a green border on it
 - 🏷️ **Override badges** — A field set by an environment variable is marked `ENV` and locked
 
@@ -69,11 +87,17 @@ values saved by the wizard, and the wizard marks such fields with an `ENV` badge
 
 Defaults below come from `src/config/schema.ts`, which is the single source of truth.
 
-### Required
+### Chat sources
+
+At least one of these must be set. Setting both watches both chats at once; the overlay tags each
+message with the platform it came from.
 
 | Variable | Description |
 |----------|-------------|
 | `TWITCH_CHAT_URL` | 📺 Twitch popout chat URL. Must be a `twitch.tv` host |
+| `KICK_CHAT_URL` | 🟢 Kick popout chat URL. Must be a `kick.com` host |
+
+Hosts are matched by suffix, so a lookalike such as `kick.com.attacker.example` is rejected.
 
 ### Overlay
 
@@ -215,7 +239,7 @@ setx TWITCH_CHAT_URL "https://www.twitch.tv/popout/YOURNAME/chat?popout="
 A preset is a **timing profile**. All three declare the same five settings, and nothing else:
 `displaySeconds`, `maxQueueLength`, `maxMessageLength`, `exitAnimationMs` and `attentionPauseMs`.
 
-Everything else you have configured — the Twitch URL above all, plus language, monitor, position and
+Everything else you have configured — the chat URLs above all, plus language, monitor, position and
 sound — is left untouched. That is the difference from **Reset to Defaults** in the footer, which
 restores *everything*.
 
@@ -240,13 +264,16 @@ The **Default** column is read from `src/config/schema.ts` at runtime rather tha
 <details>
 <summary>Click to expand</summary>
 
-**Problem:** The Twitch URL cannot be resolved.
+**Problem:** A chat URL cannot be resolved. The log line names the platform that failed.
 
 **Solutions:**
 1. ✅ Check your internet connection
-2. ✅ Verify the URL format: `https://www.twitch.tv/popout/<channel>/chat?popout=`
+2. ✅ Verify the URL format — Twitch: `https://www.twitch.tv/popout/<channel>/chat?popout=`,
+   Kick: `https://kick.com/popout/<channel>/chat`
 3. ✅ Make sure the channel name is correct
 4. ✅ Try opening the URL in a browser first
+
+With both platforms configured, this failure is isolated: the other source keeps running.
 </details>
 
 ### Chat Not Loading
@@ -257,9 +284,10 @@ The **Default** column is read from `src/config/schema.ts` at runtime rather tha
 **Problem:** The overlay opens but no messages appear.
 
 **Solutions:**
-1. ✅ Verify `TWITCH_CHAT_URL` is set correctly
-2. ✅ Run with `DIAGNOSTICS=1` to see logs
-3. ✅ Check if the channel is live with active chat
+1. ✅ Verify `TWITCH_CHAT_URL` and/or `KICK_CHAT_URL` are set correctly
+2. ✅ Run with `DIAGNOSTICS=1` to see logs — every line names its platform
+3. ✅ Check if the channel is live with active chat. Only *new* messages are shown, so an offline
+   channel displays nothing even though its page is full of old ones
 4. ✅ Try a different channel to test
 </details>
 
@@ -271,7 +299,7 @@ The **Default** column is read from `src/config/schema.ts` at runtime rather tha
 **Problem:** "Chat source observer attachment timed out after 10s"
 
 **Causes:**
-- Twitch may have changed their page structure
+- The platform named in the message may have changed its page structure
 - Network issues during page load
 
 **Solutions:**
@@ -314,6 +342,7 @@ Settings are stored in JSON format:
   "savedAt": "2024-01-15T10:30:00.000Z",
   "config": {
     "twitchChatUrl": "https://www.twitch.tv/popout/yourname/chat?popout=",
+    "kickChatUrl": "https://kick.com/popout/yourname/chat",
     "displaySeconds": 5,
     "overlayAnchor": "bottom-left"
   }

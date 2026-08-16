@@ -1,4 +1,5 @@
 import type { ChatMessage, OverlayAnchor } from '../../shared/types';
+import type { Platform } from '../../shared/platforms';
 import type { AvatarAnimator } from './avatarAnimator';
 
 interface AvatarUIOptions {
@@ -30,6 +31,7 @@ export class AvatarUI {
   private mouthInner: HTMLDivElement;
   private bubble: HTMLDivElement;
   private bubbleText: HTMLDivElement;
+  private platformBadge: HTMLDivElement;
   private animator: AvatarAnimator | null;
 
   constructor({ root, anchor, margin, bubbleMaxWidth, diagnostics }: AvatarUIOptions) {
@@ -74,6 +76,12 @@ export class AvatarUI {
     this.bubbleText = document.createElement('div');
     this.bubbleText.className = 'avatar-ui__text';
 
+    // Which platform the message came from. Absolutely positioned inside the
+    // bubble, so it cannot shift the text or disturb the avatar animation.
+    this.platformBadge = document.createElement('div');
+    this.platformBadge.className = 'avatar-ui__platform';
+
+    this.bubble.appendChild(this.platformBadge);
     this.bubble.appendChild(this.bubbleText);
     this.container.appendChild(this.avatar);
     this.container.appendChild(this.bubble);
@@ -107,6 +115,7 @@ export class AvatarUI {
       const user = message.user || '';
       const text = message.text || '';
       this.bubbleText.textContent = user ? `${user}: ${text}` : text;
+      this.showPlatform(message.platform);
       const nextId = message.id || `${user}:${text}`;
       const shouldReplay = nextId !== this.activeMessageId;
       this.activeMessageId = nextId;
@@ -134,6 +143,25 @@ export class AvatarUI {
       this.animator.stopTalkingAndReset();
       this.animator.lookCenter();
       this.animator.startBlinking();
+    }
+  }
+
+  /**
+   * Show which platform the active message came from.
+   *
+   * The label comes from the shared platform table, published on window by the
+   * overlay's <script> tags. An unknown value leaves the badge empty rather
+   * than printing a raw id.
+   */
+  private showPlatform(platform: Platform | undefined): void {
+    const labels = window.platforms ? window.platforms.PLATFORM_LABELS : null;
+    const label = platform && labels ? labels[platform] : '';
+
+    this.platformBadge.textContent = label || '';
+    if (label) {
+      this.bubble.dataset.platform = platform;
+    } else {
+      delete this.bubble.dataset.platform;
     }
   }
 

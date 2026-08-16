@@ -5,7 +5,9 @@
 
 import * as path from 'path';
 import { app, BrowserWindow, screen, Tray, Menu, nativeImage } from 'electron';
-import { TwitchChatSource } from './chatSource';
+import { TwitchChatSource } from './twitchChatSource';
+import { KickChatSource } from './kickChatSource';
+import type { ChatSource } from './chatSource';
 import { setupConfigIPC, getCurrentConfig } from './ipcHandlers';
 import { createConfigWindow, isConfigWindowOpen, focusConfigWindow } from './configWindow';
 import { resolveTargetDisplay } from '../shared/displays';
@@ -13,7 +15,7 @@ import type { ChatMessage } from '../shared/types';
 import type { AppConfig, Language } from '../config/types';
 
 let mainWindow: BrowserWindow | null = null;
-let chatSource: TwitchChatSource | null = null;
+let chatSources: ChatSource[] = [];
 let tray: Tray | null = null;
 let isSoundMuted = false;
 let currentLanguage: Language = 'en';
@@ -114,15 +116,75 @@ const createTray = (): void => {
 };
 
 /**
+ * Stop every running chat source.
+ *
+ * One source failing to stop must not leave the others running, so each is
+ * stopped independently.
+ */
+const stopChatSources = (): void => {
+  for (const source of chatSources) {
+    try {
+      source.stop();
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      console.error(`[chat] failed to stop the ${source.platform} source: ${reason}`);
+    }
+  }
+  chatSources = [];
+};
+
+/**
+ * Start a source for every configured platform.
+ *
+ * A platform with no URL is simply not observed. A source that throws while
+ * starting is reported and skipped: the streamer's other platform keeps
+ * working, which is the same containment the display sequence follows.
+ */
+const startChatSources = (
+  config: AppConfig,
+  onMessage: (message: ChatMessage) => void
+): ChatSource[] => {
+  const options = { diagnostics: config.diagnostics, onMessage };
+  const configured: ChatSource[] = [];
+
+  if (config.twitchChatUrl && config.twitchChatUrl.trim()) {
+    configured.push(new TwitchChatSource({ url: config.twitchChatUrl, ...options }));
+  }
+
+  if (config.kickChatUrl && config.kickChatUrl.trim()) {
+    configured.push(new KickChatSource({ url: config.kickChatUrl, ...options }));
+  }
+
+  if (configured.length === 0) {
+    console.warn('[chat] no chat source configured; the overlay will stay empty.');
+    return [];
+  }
+
+  const started: ChatSource[] = [];
+  for (const source of configured) {
+    try {
+      source.start();
+      started.push(source);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      console.error(`[chat] failed to start the ${source.platform} source: ${reason}`);
+    }
+  }
+
+  if (config.diagnostics) {
+    console.info(`[diagnostics] Chat sources started: ${started.map((s) => s.platform).join(', ') || '(none)'}`);
+  }
+
+  return started;
+};
+
+/**
  * Create the overlay window with the given configuration.
  * If an overlay already exists, it is closed first to prevent duplicates.
  */
 const createOverlayWindow = (config: AppConfig): void => {
   // Cleanup existing overlay before creating a new one
-  if (chatSource) {
-    chatSource.stop();
-    chatSource = null;
-  }
+  stopChatSources();
 
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.close();
@@ -211,26 +273,17 @@ const createOverlayWindow = (config: AppConfig): void => {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
-  if (config.diagnostics) {
-    console.info(`[diagnostics] Starting overlay with URL: ${config.twitchChatUrl}`);
-  }
+  // Start every configured chat source. They share one overlay queue.
+  chatSources = startChatSources(config, (message: ChatMessage) => {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+      return;
+    }
 
-  // Start the chat source
-  chatSource = new TwitchChatSource({
-    url: config.twitchChatUrl,
-    diagnostics: config.diagnostics,
-    onMessage: (message: ChatMessage) => {
-      if (!mainWindow || mainWindow.isDestroyed()) {
-        return;
-      }
-
-      if (config.diagnostics) {
-        console.info(`[diagnostics] Sending chat-message id=${message.id}`);
-      }
-      mainWindow.webContents.send('chat-message', message);
-    },
+    if (config.diagnostics) {
+      console.info(`[diagnostics] Sending chat-message id=${message.id}`);
+    }
+    mainWindow.webContents.send('chat-message', message);
   });
-  chatSource.start();
 
   // Create system tray icon for app access
   if (!tray) {
@@ -300,7 +353,5 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  if (chatSource) {
-    chatSource.stop();
-  }
+  stopChatSources();
 });

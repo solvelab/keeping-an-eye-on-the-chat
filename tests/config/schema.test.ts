@@ -42,11 +42,32 @@ test('twitchChatUrl: accepts popout and chat URLs on twitch.tv', () => {
   assert.equal(check('twitchChatUrl', 'https://twitch.tv/popout/somebody/chat'), null);
 });
 
-test('twitchChatUrl: rejects empty, malformed and non-twitch URLs', () => {
-  assert.notEqual(check('twitchChatUrl', ''), null);
-  assert.notEqual(check('twitchChatUrl', '   '), null);
+test('twitchChatUrl: rejects malformed and non-twitch URLs', () => {
   assert.notEqual(check('twitchChatUrl', 'not a url'), null);
   assert.notEqual(check('twitchChatUrl', 'https://youtube.com/live_chat'), null);
+});
+
+test('twitchChatUrl: an empty value is not a per-field error', () => {
+  // Emptiness is decided across both platform URLs, so the field itself
+  // accepts blank; validateConfig reports it when both are blank.
+  assert.equal(check('twitchChatUrl', ''), null);
+  assert.equal(check('twitchChatUrl', '   '), null);
+});
+
+test('kickChatUrl: accepts a Kick popout URL', () => {
+  assert.equal(check('kickChatUrl', 'https://kick.com/popout/somebody/chat'), null);
+  assert.equal(check('kickChatUrl', 'https://kick.com/somebody/chat'), null);
+});
+
+test('kickChatUrl: rejects lookalike hosts and other platforms', () => {
+  assert.equal(check('kickChatUrl', 'https://kick.com.attacker.example/popout/x/chat'), 'URL must be from kick.com');
+  assert.equal(check('kickChatUrl', 'https://notkick.com/popout/x/chat'), 'URL must be from kick.com');
+  assert.equal(check('kickChatUrl', 'https://www.twitch.tv/popout/x/chat'), 'URL must be from kick.com');
+  assert.notEqual(check('kickChatUrl', 'not a url'), null);
+});
+
+test('kickChatUrl: rejects a Kick URL that is not a chat page', () => {
+  assert.notEqual(check('kickChatUrl', 'https://kick.com/somebody'), null);
 });
 
 test('twitchChatUrl: rejects a twitch.tv URL that is not a chat page', () => {

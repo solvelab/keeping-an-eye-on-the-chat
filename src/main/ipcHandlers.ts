@@ -8,7 +8,7 @@ import { ConfigStore } from '../config/store';
 import { mergeConfig, validateConfig, diffFromDefaults } from '../config/merge';
 import { getDefaults, PRESETS } from '../config/defaults';
 import { CONFIG_SCHEMA, CONFIG_SECTIONS, SECTION_META } from '../config/schema';
-import { testTwitchConnection } from './testConnection';
+import { testChatConnection } from './testConnection';
 
 let configStore: ConfigStore;
 let currentTrackedConfig: TrackedConfig | null = null;
@@ -107,7 +107,7 @@ export function setupConfigIPC(diagnostics = false): void {
 
   // Test Twitch connection
   ipcMain.handle('config:testConnection', async (_event, url: string) => {
-    return testTwitchConnection(url, diagnosticsEnabled);
+    return testChatConnection(url, diagnosticsEnabled);
   });
 
   // Apply a preset.

@@ -4,7 +4,7 @@
 
 # Keeping an Eye on the Chat
 
-**Lightweight Twitch chat overlay with animated avatar for streamers**
+**Lightweight Twitch and Kick chat overlay with animated avatar for streamers**
 
 [![Electron](https://img.shields.io/badge/Electron-28.x-47848F?logo=electron&logoColor=white)](https://electronjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://typescriptlang.org)
@@ -12,7 +12,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)](https://github.com)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=ZUADM4SZT5DC8&no_recurring=0&item_name=Projetos+desenvolvidos+com+cuidado+e+dedica%C3%A7%C3%A3o.+O+apoio+incentiva+a+continuidade+e+a+evolu%C3%A7%C3%A3o+constante.&currency_code=BRL)
 
-*Show Twitch chat messages with a cute animated avatar on your stream!*
+*Show your Twitch and Kick chat messages with a cute animated avatar on your stream!*
 
 [🚀 Getting Started](#-getting-started) •
 [⚙️ Configuration](#️-configuration) •
@@ -49,7 +49,8 @@
 
 | ✅ Included | ❌ Non-Goals |
 |-------------|-------------|
-| Twitch popout chat DOM observation | Chatbot / LLM integration |
+| Twitch and Kick popout chat DOM observation | Chatbot / LLM integration |
+| Both platforms watched at the same time | Platforms beyond Twitch and Kick |
 | Message queue with timed display | Moderation features |
 | Animated avatar with speech bubbles | Message storage / history |
 | Notification sound with test/mute | TTS (text-to-speech) support |
@@ -103,7 +104,12 @@ The built-in wizard provides an easy way to configure the overlay:
 *Configuration wizard with dark theme and intuitive controls*
 </div>
 
-1. **Twitch Chat URL** — Get this from your channel: `https://www.twitch.tv/popout/YOURNAME/chat?popout=`
+1. **Chat URL** — Fill in Twitch, Kick, or both. Leave a field empty to skip that platform:
+   - Twitch: `https://www.twitch.tv/popout/YOURNAME/chat?popout=`
+   - Kick: `https://kick.com/popout/YOURNAME/chat`
+
+   > ⚠️ Each platform you configure runs its own hidden browser page. Measured on Linux, the second
+   > one adds roughly **280–530 MB** of memory. Fill in only the platforms you actually stream on.
 2. **Presets** — Quick setup options for different stream styles
 3. **Position & Timing** — Customize where and how long messages appear
 4. **Display Selection** — Choose which monitor to show the overlay (for multi-monitor setups)
@@ -172,7 +178,8 @@ via environment variables. They override values saved by the wizard.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TWITCH_CHAT_URL` | — | 📺 Twitch popout chat URL (**required**) |
+| `TWITCH_CHAT_URL` | — | 📺 Twitch popout chat URL |
+| `KICK_CHAT_URL` | — | 🟢 Kick popout chat URL |
 | `DISPLAY_SECONDS` | `5` | ⏱️ Message display duration (seconds) |
 | `OVERLAY_ANCHOR` | `bottom-left` | 📍 Position: `bottom-left`, `bottom-right`, `top-left`, `top-right` |
 | `OVERLAY_MARGIN` | `24` | 📏 Margin from screen edge (pixels) |
@@ -202,7 +209,7 @@ complete choice:
 | **Fast-Paced** | 3s | 100 | 100 | 250ms | 500ms | High-activity chat |
 | **Cozy** | 8s | 20 | 200 | 500ms | 1500ms | Relaxed streams |
 
-> 💡 A preset **only** touches those five settings. Your Twitch URL, language, monitor, position and
+> 💡 A preset **only** touches those five settings. Your chat URLs, language, monitor, position and
 > sound settings are never changed by it — that is what makes **Default** useful: it puts the timing
 > back to stock without you retyping anything. To restore *everything*, use **Reset to Defaults** in
 > the footer instead.
@@ -214,7 +221,9 @@ complete choice:
 ├── 📁 src/                     # TypeScript source files
 │   ├── 📁 main/                # Electron main process
 │   │   ├── index.ts            # App entry point, overlay window, system tray
-│   │   ├── chatSource.ts       # Twitch chat DOM observer
+│   │   ├── chatSource.ts       # Chat source base: hidden window, retry, polling
+│   │   ├── twitchChatSource.ts # Twitch DOM observer
+│   │   ├── kickChatSource.ts   # Kick DOM observer
 │   │   ├── configWindow.ts     # Configuration window
 │   │   ├── ipcHandlers.ts      # IPC communication
 │   │   └── testConnection.ts   # "Test" button in the wizard
@@ -255,15 +264,19 @@ complete choice:
 
 ```mermaid
 graph LR
-    A[🌐 Twitch Chat] -->|DOM Observer| B[chatSource.ts]
+    A[🟣 Twitch Chat] -->|DOM Observer| B[twitchChatSource.ts]
+    A2[🟢 Kick Chat] -->|DOM Observer| B2[kickChatSource.ts]
     B -->|IPC| C[displayController.ts]
+    B2 -->|IPC| C
     C -->|Queue| D[avatarUI.ts]
     C -->|Trigger| G[🔔 notificationSound.ts]
     D -->|Render| E[avatarAnimator.ts]
     E -->|GSAP| F[👁️ Overlay]
 ```
 
-1. **chatSource.ts** — Observes Twitch chat DOM via hidden BrowserView
+1. **twitchChatSource.ts / kickChatSource.ts** — Each observes its platform's chat DOM in its own
+   hidden window. Configure one or both; they run independently, and one failing does not stop
+   the other. Both extend the base in **chatSource.ts**
 2. **displayController.ts** — Manages message queue and timing
 3. **notificationSound.ts** — Plays audio notification when message appears
 4. **avatarUI.ts** — Renders avatar component and speech bubble
@@ -322,25 +335,30 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for gu
 <details>
 <summary><strong>ERR_NAME_NOT_RESOLVED</strong></summary>
 
-The Twitch URL cannot be resolved. Check:
+The chat URL cannot be resolved. The log line names the platform that failed. Check:
 1. ✅ Network connectivity
-2. ✅ URL format: `https://www.twitch.tv/popout/<channel>/chat?popout=`
+2. ✅ URL format — Twitch: `https://www.twitch.tv/popout/<channel>/chat?popout=`,
+   Kick: `https://kick.com/popout/<channel>/chat`
 3. ✅ Channel name is valid
+
+With both platforms configured, one failing does not stop the other: the working source keeps
+delivering messages.
 </details>
 
 <details>
 <summary><strong>Chat not loading</strong></summary>
 
-1. ✅ Check `TWITCH_CHAT_URL` is set correctly
-2. ✅ Run with `DIAGNOSTICS=1` to see detailed logs
-3. ✅ Verify the channel is live with active chat
+1. ✅ Check `TWITCH_CHAT_URL` and/or `KICK_CHAT_URL` are set correctly
+2. ✅ Run with `DIAGNOSTICS=1` to see detailed logs — each line names its platform
+3. ✅ Verify the channel is live with active chat. An offline channel shows old messages
+   without producing new ones, and only new messages are displayed
 </details>
 
 <details>
 <summary><strong>Observer attachment timeout</strong></summary>
 
-If you see "Chat source observer attachment timed out after 10s":
-1. ⚠️ Twitch may have changed their DOM structure
+If you see "Chat source observer attachment timed out after 10s" (the message names the platform):
+1. ⚠️ That platform may have changed its DOM structure
 2. 🔍 Run with `DIAGNOSTICS=1` for more details
 3. 🐛 Report an issue if problem persists
 </details>

@@ -15,7 +15,7 @@ import type { ChatMessage } from '../../src/shared/types';
 
 /** Build a chat message with sensible defaults. */
 function message(overrides: Partial<ChatMessage> = {}): ChatMessage {
-  return { id: 'id-1', user: 'viewer', text: 'hello', timestamp: 1, ...overrides };
+  return { id: 'id-1', platform: 'twitch', user: 'viewer', text: 'hello', timestamp: 1, ...overrides };
 }
 
 /**
@@ -237,4 +237,33 @@ test('dedup: the seen-id cache is bounded and evicts the oldest entries', () => 
   // ...while a recent one is still deduplicated.
   controller.enqueue(message({ id: `id-${OVERLAY_SEEN_ID_LIMIT}`, text: 'duplicate' }));
   assert.equal(controller.getState().totalReceived, received + 1);
+});
+
+test('dedup: messages from two platforms never collide in the shared cache', () => {
+  // Two sources feed one queue. Ids are namespaced by platform, so the same
+  // underlying page id on Twitch and Kick is still two messages.
+  const controller = parkedController({ maxQueueLength: 50 });
+
+  controller.enqueue(message({ id: 'twitch-42', platform: 'twitch', text: 'from twitch' }));
+  controller.enqueue(message({ id: 'kick-42', platform: 'kick', text: 'from kick' }));
+
+  assert.equal(controller.getState().totalReceived, 2);
+  assert.equal(controller.getState().queueLength, 1); // one is active, one queued
+});
+
+test('dedup: a repeat from the same platform is still dropped', () => {
+  const controller = parkedController();
+
+  controller.enqueue(message({ id: 'kick-7', platform: 'kick' }));
+  controller.enqueue(message({ id: 'kick-7', platform: 'kick', text: 'different text' }));
+
+  assert.equal(controller.getState().totalReceived, 1);
+});
+
+test('the active message keeps the platform it arrived with', () => {
+  const controller = parkedController();
+
+  controller.enqueue(message({ id: 'kick-1', platform: 'kick', text: 'hello' }));
+
+  assert.equal(controller.getState().activeMessage?.platform, 'kick');
 });

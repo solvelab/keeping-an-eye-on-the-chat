@@ -54,7 +54,7 @@ This is an Electron application with three process types:
 │  src/main/                                                  │
 │  • App lifecycle & window management                        │
 │  • IPC handlers                                             │
-│  • Twitch chat DOM observer (BrowserView)                   │
+│  • Twitch and Kick chat DOM observers (hidden windows)      │
 └────────────────────────┬────────────────────────────────────┘
                          │ IPC (contextBridge)
 ┌────────────────────────▼────────────────────────────────────┐
@@ -133,7 +133,9 @@ tests/
 ```
 src/main/
 ├── index.ts           # Entry point
-├── chatSource.ts      # DOM observer
+├── chatSource.ts      # DOM observer base (window, retry, polling)
+├── twitchChatSource.ts # Twitch observer
+├── kickChatSource.ts  # Kick observer
 ├── configWindow.ts    # Config window
 └── yourFeature.ts     # ← Add here
 ```
@@ -242,7 +244,7 @@ npm run build:ts
 # 7. App runs correctly
 npm run start:diag
 
-# 8. Test with live Twitch chat if possible
+# 8. Test with a live Twitch and/or Kick chat if possible (an offline channel produces no messages)
 ```
 
 ### Required check

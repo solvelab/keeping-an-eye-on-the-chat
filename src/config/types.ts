@@ -28,8 +28,10 @@ export interface AppConfig {
   language: Language;
   /** Display/monitor ID to show overlay (0 = primary). */
   displayId: number;
-  /** Twitch chat popout URL (required). */
+  /** Twitch chat popout URL. At least one platform URL must be set. */
   twitchChatUrl: string;
+  /** Kick chat popout URL. At least one platform URL must be set. */
+  kickChatUrl: string;
   /** Duration in seconds to display each message. */
   displaySeconds: number;
   /** Overlay position anchor. */
