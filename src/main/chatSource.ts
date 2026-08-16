@@ -1,4 +1,10 @@
 import { BrowserWindow } from 'electron';
+import {
+  SUPPRESSED_DOMAIN_SUFFIXES,
+  TWITCH_DOMAIN_SUFFIXES,
+  getHostname,
+  hostnameMatches
+} from './hostnames';
 import type { ChatMessage, RawChatItem } from '../shared/types';
 
 const DEFAULT_CONTAINER_SELECTORS = [
@@ -36,17 +42,6 @@ const DEFAULT_IGNORE_SELECTORS = [
 
 const DEFAULT_TIMESTAMP_SELECTORS = ['time', '[data-a-target="chat-timestamp"]'];
 
-const TWITCH_DOMAIN_SUFFIXES = ['twitch.tv', 'ttvnw.net', 'jtvnw.net', 'twitchcdn.net'];
-
-const SUPPRESSED_DOMAIN_SUFFIXES = [
-  'oneadtag.com',
-  'doubleclick.net',
-  'googlesyndication.com',
-  'googletagmanager.com',
-  'google-analytics.com',
-  'adservice.google.com'
-];
-
 interface ObserverConfig {
   containerSelectors: string[];
   messageSelectors: string[];
@@ -75,21 +70,6 @@ export interface TwitchChatSourceOptions {
   logger?: Logger;
   diagnostics?: boolean;
 }
-
-const getHostname = (url: string): string => {
-  if (!url) {
-    return '';
-  }
-
-  try {
-    return new URL(url).hostname.toLowerCase();
-  } catch {
-    return '';
-  }
-};
-
-const hostnameMatches = (hostname: string, suffixes: string[]): boolean =>
-  suffixes.some((suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`));
 
 const OBSERVER_CONFIG: ObserverConfig = {
   containerSelectors: DEFAULT_CONTAINER_SELECTORS,
