@@ -1,3 +1,12 @@
+## [2.0.1](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.0.0...v2.0.1) (2026-08-16)
+
+
+### Bug Fixes
+
+* **config:** make the "Default" preset restore the stock timing ([a864d30](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/a864d30df5f7c4d177eb3945c89a38571a9e25ed))
+* **release:** recognise gitmoji-prefixed commits when computing releases ([2d7f685](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/2d7f68574630640d116f51e277c1d03991325100))
+* **release:** reject prose that the changelog parser reads as a version bump marker ([bc25d08](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/bc25d08dc970c7dbea9afc643488ad054d7b372b))
+
 # [2.0.0](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v1.1.2...v2.0.0) (2026-08-16)
 
 > ⚠️ **Not a breaking release.** The major bump was an accident: a commit body wrapped the words
