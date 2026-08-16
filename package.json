@@ -29,7 +29,7 @@
     "lint": "eslint src tests scripts eslint.config.js",
     "check-packaging": "node scripts/check-packaging.js",
     "typecheck": "tsc -p config/tsconfig.main.json --noEmit && tsc -p config/tsconfig.preload.json --noEmit && tsc -p config/tsconfig.renderer.json --noEmit",
-    "build:test": "tsc -p config/tsconfig.test.json",
+    "build:test": "node scripts/clean-dist-tests.js && tsc -p config/tsconfig.test.json",
     "test": "npm run build:test && node scripts/run-tests.js",
     "build:ts": "tsc -p config/tsconfig.main.json && tsc -p config/tsconfig.preload.json && tsc -p config/tsconfig.renderer.json && npm run copy-assets",
     "copy-assets": "node scripts/copy-assets.js",

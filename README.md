@@ -69,7 +69,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/didevlab/keeping-an-eye-on-the-chat.git
+git clone https://github.com/solvelab/keeping-an-eye-on-the-chat.git
 cd keeping-an-eye-on-the-chat
 
 # Install dependencies
@@ -167,34 +167,41 @@ If you have multiple monitors, you can choose which display shows the overlay:
 
 ### 🔧 Environment Variables
 
-For advanced users, all settings can be configured via environment variables:
+For advanced users, every setting except the language and the display selection can be configured
+via environment variables. They override values saved by the wizard.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TWITCH_CHAT_URL` | — | 📺 Twitch popout chat URL (**required**) |
-| `DISPLAY_SECONDS` | `5` | ⏱️ Message display duration |
+| `DISPLAY_SECONDS` | `5` | ⏱️ Message display duration (seconds) |
 | `OVERLAY_ANCHOR` | `bottom-left` | 📍 Position: `bottom-left`, `bottom-right`, `top-left`, `top-right` |
 | `OVERLAY_MARGIN` | `24` | 📏 Margin from screen edge (pixels) |
 | `BUBBLE_MAX_WIDTH` | `420` | 📐 Maximum bubble width (pixels) |
+| `ATTENTION_PAUSE_MS` | `500` | 🎬 Pause before the avatar speaks (ms). `0` disables it |
 | `MAX_MESSAGE_LENGTH` | `140` | ✂️ Truncate messages longer than this |
-| `IGNORE_COMMAND_PREFIX` | `!` | 🚫 Ignore messages starting with this |
+| `IGNORE_COMMAND_PREFIX` | `!` | 🚫 Ignore messages starting with this (empty disables) |
 | `IGNORE_USERS` | — | 👤 Comma-separated usernames to ignore |
 | `MAX_QUEUE_LENGTH` | `50` | 📚 Maximum queued messages |
-| `EXIT_ANIMATION_MS` | `400` | 🎬 Exit animation duration (ms) |
-| `DIAGNOSTICS` | `0` | 🔍 Enable diagnostic logs (`1` to enable) |
-| `OVERLAY_DEBUG` | `0` | 🐛 Show debug UI (`1` to enable) |
+| `EXIT_ANIMATION_MS` | `400` | 🎞️ Exit animation duration (ms). `0` disables it |
 | `NOTIFICATION_SOUND_ENABLED` | `1` | 🔔 Enable notification sound (`0` to disable) |
-| `NOTIFICATION_SOUND_FILE` | `notification.wav` | 🎵 Sound file path (full path or filename in assets/sounds/) |
+| `NOTIFICATION_SOUND_FILE` | — | 🎵 Full path to an audio file (empty = bundled default) |
 | `NOTIFICATION_SOUND_VOLUME` | `50` | 🔊 Volume level (0-100) |
-| `NOTIFICATION_SOUND_DEVICE` | — | 🎧 Audio output device ID (system default if empty) |
+| `NOTIFICATION_SOUND_DEVICE` | — | 🎧 Audio output device ID (empty = system default) |
+| `DIAGNOSTICS` | `0` | 🔍 Enable diagnostic logs (`1` to enable) |
+| `OVERLAY_DEBUG` | `0` | 🐛 Show debug UI frame (`1` to enable) |
+| `DEVTOOLS` | `0` | 🛠️ Open DevTools on start (`1` to enable) |
 
 ### 🎯 Presets
 
-| Preset | Description | Best For |
-|--------|-------------|----------|
-| **Default** | Balanced settings | Most streams |
-| **Fast-Paced** | 3s display, larger queue | High-activity chat |
-| **Cozy** | 8s display, smaller queue | Relaxed streams |
+| Preset | Changes | Best For |
+|--------|---------|----------|
+| **Default** | nothing — the "no preset" entry | — |
+| **Fast-Paced** | 3s display, 100-message queue, 100-char messages, 250ms exit, 500ms pause | High-activity chat |
+| **Cozy** | 8s display, 20-message queue, 200-char messages, 500ms exit, 1500ms pause | Relaxed streams |
+
+> 💡 A preset only touches the timing settings it declares. Your Twitch URL, language, monitor,
+> position and sound settings are never changed by it. Use **Reset to Defaults** to restore
+> everything.
 
 ## 🏗️ Project Structure
 
@@ -202,34 +209,40 @@ For advanced users, all settings can be configured via environment variables:
 📁 keeping-an-eye-on-the-chat/
 ├── 📁 src/                     # TypeScript source files
 │   ├── 📁 main/                # Electron main process
-│   │   ├── index.ts            # App entry point
+│   │   ├── index.ts            # App entry point, overlay window, system tray
 │   │   ├── chatSource.ts       # Twitch chat DOM observer
 │   │   ├── configWindow.ts     # Configuration window
-│   │   └── ipcHandlers.ts      # IPC communication
+│   │   ├── ipcHandlers.ts      # IPC communication
+│   │   └── testConnection.ts   # "Test" button in the wizard
 │   ├── 📁 preload/             # Electron preload scripts
-│   │   └── index.ts            # IPC bridge (contextBridge)
+│   │   ├── index.ts            # Overlay IPC bridge (contextBridge)
+│   │   └── configPreload.ts    # Config window IPC bridge
 │   ├── 📁 renderer/            # Browser/renderer process
-│   │   ├── 📁 overlay/         # Main overlay UI
-│   │   │   ├── index.html
-│   │   │   ├── 📁 scripts/     # Avatar, animations, display, sound
-│   │   │   └── 📁 styles/      # CSS
-│   │   ├── 📁 config/          # Configuration wizard
-│   │   │   ├── index.html
-│   │   │   ├── 📁 scripts/     # Form controller
-│   │   │   └── 📁 styles/      # Dark theme
-│   │   └── 📁 assets/          # Static assets
-│   │       └── 📁 sounds/      # Notification sounds (.mp3, .wav, .ogg, .m4a)
+│   │   ├── index.html          # Overlay page
+│   │   ├── 📁 scripts/         # displayController, avatarUI, avatarAnimator, notificationSound
+│   │   ├── 📁 styles/          # Overlay CSS
+│   │   ├── 📁 assets/          # Static assets (notification sounds)
+│   │   └── 📁 config/          # Configuration wizard
+│   │       ├── index.html
+│   │       ├── 📁 scripts/     # configApp.ts, configValues.ts
+│   │       ├── 📁 styles/      # Dark theme
+│   │       └── 📁 assets/      # Wizard logo
 │   ├── 📁 config/              # Configuration logic
 │   │   ├── types.ts            # TypeScript interfaces
 │   │   ├── schema.ts           # Config schema & validation
 │   │   ├── defaults.ts         # Defaults & presets
 │   │   ├── store.ts            # JSON persistence
 │   │   └── merge.ts            # Config merge logic
-│   └── 📁 shared/              # Shared types
-│       └── 📁 types/           # ChatMessage, OverlayConfig
+│   └── 📁 shared/              # Shared between processes
+│       ├── 📁 types/           # ChatMessage, OverlayConfig
+│       ├── boundedIdSet.ts     # Bounded dedup cache
+│       ├── displays.ts         # Monitor resolution
+│       └── hostnames.ts        # Domain suffix matching
+├── 📁 tests/                   # Unit tests (node:test)
 ├── 📁 dist/                    # Compiled JavaScript (generated)
+├── 📁 dist-tests/              # Compiled tests (generated)
 ├── 📁 config/                  # TypeScript configuration
-├── 📁 scripts/                 # Build scripts
+├── 📁 scripts/                 # Build and check scripts
 ├── 📁 packaging/               # Platform packaging helpers
 └── 📁 openspec/                # Project specifications
 ```
@@ -261,7 +274,10 @@ graph LR
 | `npm start` | 🚀 Run app (auto-builds) |
 | `npm run start:diag` | 🔍 Run with diagnostics |
 | `npm run start:overlay` | 🎭 Run in overlay mode |
+| `npm run lint` | 🧹 Lint sources and tests |
 | `npm run typecheck` | ✅ Type check without compiling |
+| `npm test` | 🧪 Compile and run the unit suite |
+| `npm run check-packaging` | 📦 Verify the Windows launchers match `build.productName` |
 | `npm run build:ts` | 🔨 Compile TypeScript to dist/ |
 | `npm run build:win` | 📦 Build Windows zip |
 | `npm run build:win:nsis` | 💿 Build Windows installer |
@@ -329,7 +345,7 @@ If you see "Chat source observer attachment timed out after 10s":
 <summary><strong>Notification sound not playing</strong></summary>
 
 1. ✅ Check that "Enable Notification Sound" is enabled in settings
-2. ✅ Verify the sound file exists in `src/renderer/assets/sounds/`
+2. ✅ If you selected a custom file, verify it still exists at that path
 3. ✅ Ensure the filename matches exactly (case-sensitive)
 4. ✅ Check volume is above 0%
 5. ✅ Supported formats: `.mp3`, `.wav`, `.ogg`, `.m4a`

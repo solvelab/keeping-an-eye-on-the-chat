@@ -818,7 +818,7 @@ class ConfigApp {
 
     // Logo click - open GitHub profile in default browser
     document.getElementById('headerLogo')?.addEventListener('click', () => {
-      window.configAPI.openExternal('https://github.com/didevlab');
+      window.configAPI.openExternal('https://github.com/solvelab');
     });
 
     // Donate button - open PayPal donation page

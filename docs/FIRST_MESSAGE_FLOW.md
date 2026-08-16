@@ -1,154 +1,195 @@
 # First Message Flow (Overlay)
 
-This document traces the exact code path for the first chat bubble that becomes visible in the overlay, starting at app boot and ending when the first bubble hides.
+Traces the exact code path for the first chat bubble that becomes visible, from app boot to the
+bubble hiding again.
+
+Every path below is a real file in this repository. If a rename makes one of them wrong, this
+document is wrong — fix it in the same commit.
 
 ## Mermaid sequence diagram
 
 ```mermaid
 sequenceDiagram
   participant App as Electron app
-  participant Main as main.js
-  participant Overlay as renderer (index.html)
+  participant Main as src/main/index.ts
+  participant Wizard as config wizard
+  participant Overlay as src/renderer/index.html
   participant Chat as TwitchChatSource
   participant Hidden as hidden chat BrowserWindow
   participant DOM as Twitch chat DOM
   participant DC as DisplayController
   participant UI as AvatarUI
 
-  App->>Main: app.whenReady -> createWindow()
-  Main->>Overlay: loadFile(renderer/index.html?debug=0|1)
+  App->>Main: app.whenReady() -> startApp()
+  Main->>Wizard: createConfigWindow()
+  Wizard->>Main: ipcRenderer.invoke('config:start', config)
+  Wizard->>Main: ipcRenderer.send('config:started')
+  Main->>Overlay: createOverlayWindow() -> loadFile(renderer/index.html?debug=0|1)
+  Main->>Overlay: did-finish-load -> send('set-muted'), send('set-config')
+  Overlay->>DC: waitForConfig() resolves, controller built
   Main->>Chat: new TwitchChatSource(url).start()
-  Chat->>Hidden: loadURL(TWITCH_CHAT_URL)
+  Chat->>Hidden: loadURL(twitchChatUrl)
   Hidden-->>Chat: dom-ready / did-finish-load
   Chat->>Hidden: executeJavaScript(buildObserverScript)
   Hidden->>DOM: MutationObserver.observe(container)
   DOM-->>Hidden: new chat node added
-  Hidden->>Hidden: __twitchChatQueue.push(message)
-  Chat->>Hidden: poller executeJavaScript(splice queue)
+  Hidden->>Hidden: __twitchChatQueue.push(item)
+  Chat->>Hidden: poll every 250ms -> splice the queue
   Chat->>Main: onMessage(normalized)
-  Main->>Overlay: ipc send('chat-message')
+  Main->>Overlay: send('chat-message')
   Overlay->>DC: enqueue(message)
-  DC->>UI: onUpdate(activeMessage)
-  UI-->>Overlay: add avatar-ui--visible class
-  DC->>DC: setTimeout(displayMs)
-  DC->>UI: onUpdate(activeMessage = null)
-  UI-->>Overlay: remove avatar-ui--visible class
+  DC->>UI: playEntranceAnimation -> playAttentionPause -> playReadingAnimation
+  DC->>DC: display timer (displaySeconds)
+  DC->>UI: playExitAnimation
+  DC->>DC: phase = 'idle' -> startNextIfIdle()
 ```
 
-## Timeline (T0..Tn)
+## Timeline
 
-1. T0 - Electron starts and runs `app.whenReady().then(createWindow)` in `src/main.js` so the main process owns overlay startup.
-2. T1 - `createWindow()` builds the always-on-top transparent overlay `BrowserWindow` and loads `src/renderer/index.html` with the `debug` query param based on `OVERLAY_DEBUG` (and dev defaults).
-3. T2 - The preload script `src/renderer/preload.js` runs in the overlay window and exposes `window.overlayChat` with `getConfig()` and `onMessage()`; `DISPLAY_SECONDS` and other config env vars are resolved here.
-4. T3 - The renderer bootstraps `AvatarUI` and `DisplayController` in `src/renderer/index.html`, then registers `overlayChat.onMessage` to call `controller.enqueue(message)`.
-5. T4 - The main process creates `TwitchChatSource` with `TWITCH_CHAT_URL` and `DIAGNOSTICS` and calls `start()`.
-6. T5 - `TwitchChatSource.start()` opens a hidden `BrowserWindow`, starts polling every 250ms, and loads the Twitch popout chat URL.
-7. T6 - When the hidden window hits `dom-ready` or `did-finish-load`, `attachObserverWithRetry()` attempts to inject the observer script until it finds a chat container or times out after 10s.
-8. T7 - The injected script finds the chat container, marks existing chat nodes as seen, and attaches a `MutationObserver` to watch for new message nodes.
-9. T8 - The first new message node appears in the Twitch DOM. The observer extracts `id`, `user`, `text`, and `timestamp` and pushes a raw item into `window.__twitchChatQueue`.
-10. T9 - On the next poll tick, `flushQueue()` reads and clears `window.__twitchChatQueue`, normalizes the first item, deduplicates by `id`, and calls the main-process `onMessage`.
-11. T10 - The main process sends the message to the overlay renderer via IPC (`chat-message`). The renderer logs it and calls `DisplayController.enqueue()`.
-12. T11 - `DisplayController.enqueue()` filters the message, truncates if needed, pushes it into the queue, and immediately starts display because `activeMessage` is null.
-13. T12 - The `onUpdate` callback calls `AvatarUI.setActiveMessage()`, which sets the bubble text and toggles the `avatar-ui--visible` class to animate the first bubble in.
-14. T13 - After `displayMs` expires, `DisplayController` clears `activeMessage`, triggers another `onUpdate`, and the UI removes `avatar-ui--visible` to animate the bubble out.
+1. **T0** — `app.whenReady().then(startApp)` in `src/main/index.ts`. IPC handlers are registered
+   before that, at module load, by `setupConfigIPC()`.
+2. **T1** — `startApp()` always opens the **configuration wizard** first
+   (`src/main/configWindow.ts`). The overlay does not exist yet.
+3. **T2** — The wizard (`src/renderer/config/scripts/configApp.ts`) loads the schema and the merged
+   config over IPC, renders the form, and validates it. **Start** stays disabled until the config
+   is valid.
+4. **T3** — Clicking **Start** calls `config:start`, which validates and persists the diff from
+   defaults, then `config:started`, which closes the wizard and calls back into
+   `createOverlayWindow(config)`.
+5. **T4** — `createOverlayWindow()` picks the monitor with
+   `resolveTargetDisplay()` (`src/shared/displays.ts`) and creates the transparent, click-through,
+   always-on-top `BrowserWindow` with `src/preload/index.ts` attached.
+6. **T5** — On `did-finish-load` the main process sends **`set-muted`** (the tray's mute state
+   survives overlay restarts) and then **`set-config`**. The preload resolves any pending
+   `waitForConfig()`; if nothing arrives within 2 s it falls back to `parseEnvConfig()`.
+7. **T6** — The inline bootstrap in `src/renderer/index.html` awaits `waitForConfig()` and builds
+   `NotificationSound`, `AvatarUI` and `DisplayController`, wiring the display callbacks.
+8. **T7** — In parallel, `TwitchChatSource.start()` (`src/main/chatSource.ts`) opens a **hidden**
+   `BrowserWindow` (`sandbox: true`, `contextIsolation: true`), loads the popout URL and starts a
+   250 ms poller.
+9. **T8** — On `dom-ready` or `did-finish-load`, `attachObserverWithRetry()` injects the observer
+   script with exponential backoff (250 ms → 2 s) until a chat container matches or 10 s elapse.
+10. **T9** — The injected script marks every message node already on the page as seen, then attaches
+    a `MutationObserver`. Backlog messages are therefore never displayed.
+11. **T10** — The first new node appears. The script extracts `id`, `user`, `text` and `timestamp`
+    and pushes an item onto `window.__twitchChatQueue`.
+12. **T11** — The next poll tick splices the queue, `normalizeMessage()` trims and guarantees an id,
+    the bounded `seenIds` cache rejects duplicates, and `onMessage` forwards it.
+13. **T12** — The main process sends `chat-message` over IPC; the overlay calls
+    `controller.enqueue(message)`.
+14. **T13** — `enqueue()` deduplicates, applies the ignore list and command prefix, truncates, and
+    pushes onto the queue (dropping the oldest past `maxQueueLength`). With the controller idle,
+    `startNextIfIdle()` runs immediately.
+15. **T14** — `runDisplaySequence()` plays the four stages in order, then the display timer, then
+    the exit animation, and returns to `'idle'`. Any failure in a stage is caught, logged as
+    `DISPLAY_FAILED`, and the controller returns to `'idle'` so the next message still displays.
 
-## Boot sequence (main process to renderer)
+## Configuration precedence
 
-- Main entry file: `src/main.js` sets up the Electron app lifecycle and builds the overlay `BrowserWindow` in `createWindow()` (`app.whenReady().then(createWindow)`).
-- Renderer HTML/JS entry: `mainWindow.loadFile(..., { query: { debug }})` loads `src/renderer/index.html`, which loads `displayController.js`, `avatarUI.js`, and `avatarUI.css`.
-- Env vars impacting startup:
-  - `TWITCH_CHAT_URL` sets the hidden chat window URL; empty or invalid disables chat source.
-  - `OVERLAY_DEBUG` controls the `debug` query param and the overlay debug panel; in dev, it defaults to enabled unless set to `0`.
-  - `DIAGNOSTICS` toggles diagnostic logging in the main process and chat source.
-  - `DISPLAY_SECONDS` is read in the preload script and controls display duration in the renderer (later converted to ms by `DisplayController`).
+`src/config/merge.ts` resolves, in order: **schema defaults → saved config → environment variables
+→ CLI overrides**, tracking the source of each field so the wizard can show an `ENV`/`CLI` badge. An
+environment value that cannot be parsed to the field's type is ignored rather than applied.
 
-## Chat connection and observation setup
+The overlay receives the resolved values over `set-config`. `parseEnvConfig()` in the preload is
+only a fallback for the case where the main process never sends one.
 
-- Twitch chat is loaded in a hidden `BrowserWindow` (not a webview or iframe) via `this.window.loadURL(this.url)` in `TwitchChatSource.start()`.
-- The observer script is injected using `webContents.executeJavaScript(buildObserverScript(...))` and attaches a `MutationObserver` on the first container that matches these selectors:
-  - Container selectors: `[data-test-selector="chat-scrollable-area__message-container"]`, `[data-a-target="chat-scrollable-area__message-container"]`, `[role="log"]`, `.chat-scrollable-area__message-container`
-  - Message selectors: `[data-a-target="chat-line-message"]`, `[data-test-selector="chat-line-message"]`, `[data-a-target="chat-message"]`, `.chat-line__message`
-  - Username selectors: `[data-a-target="chat-message-username"]`, `[data-test-selector="chat-message-username"]`, `.chat-author__display-name`
-  - Text selectors: `[data-a-target="chat-message-text"]`, `[data-test-selector="chat-message-text"]`, `.chat-line__message-body`
-  - Ignore selectors (system notices): `[data-a-target="user-notice-line"]`, `[data-a-target="chat-deleted-message"]`, `[data-a-target="chat-line-delete-message"]`, `.chat-line__status`
-  - Timestamp selectors: `time`, `[data-a-target="chat-timestamp"]`
-- The observer marks all existing message nodes as seen before observing, so backlog messages are not queued. Only messages added after attachment become candidates for the first overlay bubble.
-- Availability logic:
-  - Unavailable when `TWITCH_CHAT_URL` is empty or invalid (chat source returns early).
-  - Unavailable when the hidden window fails to load or the observer cannot find a container within 10 seconds (logs an error).
-  - Available when the hidden window loads and `buildObserverScript` returns `{ attached: true }`.
+## Chat connection and observation
 
-## Message normalization for the first message
+Twitch chat is loaded in a hidden `BrowserWindow` — not a `webview` or an iframe. The observer is
+injected with `webContents.executeJavaScript()` and attaches to the first container that matches:
 
-- Raw DOM to queue item happens inside the injected observer script:
-  - Required fields: `user` (from username selectors) and `text` (from text selectors or `.text-fragment` fallback).
-  - Optional fields: `id` (from `data-id`, `data-message-id`, or `id`) and `timestamp` (from `time[datetime]` or `data-a-target="chat-timestamp"`).
-  - Each queued item also gets `capturedAt: Date.now()` to provide a timestamp fallback.
-- Normalization in `TwitchChatSource.normalizeMessage()` trims `user` and `text`, rejects empty values, chooses a timestamp, and guarantees an `id`:
-  - `timestamp` preference: parsed DOM timestamp -> `capturedAt` -> `Date.now()`.
-  - `id` preference: DOM id -> generated local id (`local-${counter}-${timestamp}-${hash}`).
-- The normalized message forwarded to the renderer has exactly these fields: `id`, `user`, `text`, `timestamp`. There is no avatar URL or image data in the message object.
+- **Container**: `[data-test-selector="chat-scrollable-area__message-container"]`,
+  `[data-a-target="chat-scrollable-area__message-container"]`, `[role="log"]`,
+  `.chat-scrollable-area__message-container`
+- **Message**: `[data-a-target="chat-line-message"]`, `[data-test-selector="chat-line-message"]`,
+  `[data-a-target="chat-message"]`, `.chat-line__message`
+- **Username**: `[data-a-target="chat-message-username"]`,
+  `[data-test-selector="chat-message-username"]`, `.chat-author__display-name`
+- **Text**: `[data-a-target="chat-message-text"]`, `[data-test-selector="chat-message-text"]`,
+  `.chat-line__message-body`, then a `.text-fragment` fallback
+- **Ignored (system notices)**: `[data-a-target="user-notice-line"]`,
+  `[data-a-target="chat-deleted-message"]`, `[data-a-target="chat-line-delete-message"]`,
+  `.chat-line__status`
+- **Timestamp**: `time`, `[data-a-target="chat-timestamp"]`
 
-## Queue behavior when empty to first item arrives
+No messages appear when: the URL is empty or not a `twitch.tv` host (suffix match — a lookalike host
+is rejected), the hidden window fails to load, or no container matches within 10 seconds.
 
-- `DisplayController.enqueue()` rejects messages without a string `id` and deduplicates by `id` (`seenIds`).
-- Filters applied before the message enters the display queue:
-  - Ignore users in `IGNORE_USERS` (case-insensitive match).
-  - Ignore messages starting with `IGNORE_COMMAND_PREFIX` (default `!`).
-  - Truncate overlong messages to `MAX_MESSAGE_LENGTH` and append a Unicode ellipsis (U+2026).
-- When the queue was empty and `activeMessage` is null, `startNextIfIdle()` runs immediately after enqueue:
-  - It shifts the message from the queue and sets it as `activeMessage`.
-  - It starts the display timer with `setTimeout(displayMs)`.
-- There is no debounce or throttle in the renderer; the only pacing is the 250ms poll interval in the chat source and the `activeMessage` guard.
+## Message normalization
 
-## First render and animation
+In the injected script, `user` and `text` are required; `id` and `timestamp` are optional, and every
+item also carries `capturedAt`.
 
-- `DisplayController.onUpdate` calls `avatarUI.setActiveMessage(state.activeMessage)` every time state changes.
-- When the first message becomes active:
-  - `AvatarUI.setActiveMessage()` sets the bubble text to `user: text` and toggles `avatar-ui--visible` (via `replayEnterAnimation()`).
-  - CSS in `avatarUI.css` handles the visible state: opacity and transform transition over 350ms, plus idle bob/pulse animations while visible.
-- The avatar element is a static styled circle; no avatar URL is resolved or rendered from message data.
+`TwitchChatSource.normalizeMessage()` then trims, rejects empty values and guarantees both fields:
 
-## Timing and teardown for the first message
+- `timestamp`: parsed DOM timestamp → `capturedAt` → `Date.now()`
+- `id`: DOM id → generated `local-<counter>-<timestamp>-<hash>`
 
-- `DISPLAY_SECONDS` is read in the preload script and passed to the renderer config; `DisplayController` converts it to `displayMs = safeSeconds * 1000`.
-- The only timers involved in the first message lifecycle:
-  - `setInterval(..., 250)` in `TwitchChatSource.startPolling()` to flush the hidden window queue.
-  - `setTimeout(displayMs)` in `DisplayController.startNextIfIdle()` to clear the active message.
-- When the display timer ends:
-  - `activeMessage` is set to null, `onUpdate` fires, and `AvatarUI` removes `avatar-ui--visible` to fade the bubble out.
-  - `startNextIfIdle()` runs again to display the next queued message if any.
-- If a second message arrives while the first is active:
-  - It is queued but not displayed until the timer clears `activeMessage`.
-  - If the queue exceeds `MAX_QUEUE_LENGTH`, older items are dropped from the front before they are shown.
+The message that reaches the renderer has exactly `id`, `user`, `text`, `timestamp`. There is no
+avatar image in it — the avatar is a styled DOM element.
 
-## Key code locations
+## Deduplication (three layers)
 
-- Main entry and overlay window creation: `src/main.js` (`createWindow`, IPC send in `onMessage`)
-- Hidden chat window and observer injection: `src/chatSource.js` (`TwitchChatSource.start`, `attachObserverWithRetry`, `buildObserverScript`)
-- Queue polling and normalization: `src/chatSource.js` (`startPolling`, `flushQueue`, `normalizeMessage`)
-- Renderer config and IPC bridge: `src/renderer/preload.js` (`overlayChat.getConfig`, `overlayChat.onMessage`)
-- Renderer boot and controller wiring: `src/renderer/index.html` (inline script bootstrapping `AvatarUI` and `DisplayController`)
-- Queueing and display timing: `src/renderer/displayController.js` (`enqueue`, `startNextIfIdle`)
-- DOM updates and animation triggers: `src/renderer/avatarUI.js` (`setActiveMessage`, `replayEnterAnimation`)
-- Visual transitions: `src/renderer/avatarUI.css` (`avatar-ui--visible`, transitions, keyframes)
+| Layer | Where | Bounded by |
+|---|---|---|
+| `WeakSet` of DOM nodes | injected script | garbage collection, as Twitch prunes its DOM |
+| `seenIds` | `TwitchChatSource` | `BoundedIdSet`, 2000 ids |
+| `seenIds` | `DisplayController` | `BoundedIdSet`, 500 ids |
+
+The two id caches evict oldest-first (`src/shared/boundedIdSet.ts`), so a multi-hour stream does not
+grow them without limit.
+
+## Timing and teardown
+
+`displaySeconds` becomes `displayMs` in the controller. The timers involved in one message are:
+
+- `setInterval(…, 250)` in `TwitchChatSource.startPolling()`
+- `setTimeout(displayMs)` in `waitDisplayDuration()`
+- `setTimeout(exitAnimationMs)` in `waitExitDuration()`, only when no `playExitAnimation` callback
+  is supplied
+
+Each sequence carries a **token**. When a new sequence starts, the token changes, timers are
+cleared and `onDisplay.cancel()` resets the avatar — so a superseded sequence can never write state
+belonging to the current one.
 
 ## Edge cases for the first message
 
-- Backlog messages already in the Twitch DOM at observer attach time are marked as seen and will not be displayed.
-- If the container selectors never match within 10 seconds, observer attachment times out and no messages appear.
-- Messages missing a username or text are dropped in the observer script before they reach the queue.
-- Duplicate messages can be dropped twice: once by the hidden window `WeakSet` of DOM nodes, and again by `seenIds` in the main process and renderer.
-- The first message can be delayed by the 250ms poll interval and by `webContents.isLoading()` short-circuiting queue reads.
-- If the first message is ignored by `IGNORE_USERS` or `IGNORE_COMMAND_PREFIX`, the overlay stays empty until a non-ignored message arrives.
+- Backlog messages present at attach time are marked as seen and never displayed.
+- A message missing a username or text is dropped inside the observer script.
+- A message from an ignored user, or starting with `IGNORE_COMMAND_PREFIX`, leaves the overlay empty
+  until a non-ignored message arrives.
+- The first message can be delayed by up to the 250 ms poll interval, and `flushQueue()`
+  short-circuits entirely while `webContents.isLoading()` is true.
+- If the display sequence throws, the message is lost but the overlay stays alive.
 
 ## How to debug
 
-- Run with diagnostics: `TWITCH_CHAT_URL="https://www.twitch.tv/popout/<channel>/chat" DIAGNOSTICS=1 npm run start:diag`
-- Optional overlays:
-  - `OVERLAY_DEBUG=1` enables the debug frame and counters in the overlay UI.
-  - `DISPLAY_SECONDS`, `MAX_MESSAGE_LENGTH`, `IGNORE_USERS`, `IGNORE_COMMAND_PREFIX`, `MAX_QUEUE_LENGTH` influence filtering and timing.
-- Where to look in logs:
-  - Main process stdout shows `[diagnostics]` lines from `src/main.js` and `src/chatSource.js`, including observer attach and parsed message info.
-  - Renderer console logs `[chat-message]` from `src/renderer/index.html` (visible via DevTools if `DEVTOOLS=1` in dev).
+```bash
+TWITCH_CHAT_URL="https://www.twitch.tv/popout/<channel>/chat" DIAGNOSTICS=1 npm run start:diag
 ```
+
+- `OVERLAY_DEBUG=1` adds the debug frame and live counters (received, displayed, dropped, ignored,
+  truncated) to the overlay.
+- `DEVTOOLS=1` opens DevTools for the overlay window in development.
+- Main-process `[diagnostics]` lines come from `src/main/index.ts` and `src/main/chatSource.ts`:
+  observer attachment, parsed messages, and the resolved monitor.
+- Renderer `[diagnostics]` lines come from `src/renderer/scripts/displayController.ts` and
+  `avatarAnimator.ts` — see [AVATAR_QA.md](AVATAR_QA.md) for the full list.
+- Chat text is logged **only** when diagnostics or overlay debug are enabled.
+
+## Key code locations
+
+| Concern | File |
+|---|---|
+| App lifecycle, overlay window, system tray | `src/main/index.ts` |
+| Configuration wizard window | `src/main/configWindow.ts` |
+| IPC handlers | `src/main/ipcHandlers.ts` |
+| Hidden chat window, observer, polling, normalization | `src/main/chatSource.ts` |
+| Monitor resolution | `src/shared/displays.ts` |
+| Overlay IPC bridge | `src/preload/index.ts` |
+| Overlay bootstrap | `src/renderer/index.html` |
+| Queueing, filtering, display sequencing | `src/renderer/scripts/displayController.ts` |
+| Bubble and avatar DOM | `src/renderer/scripts/avatarUI.ts` |
+| GSAP animation | `src/renderer/scripts/avatarAnimator.ts` |
+| Notification sound | `src/renderer/scripts/notificationSound.ts` |
+| Visual transitions | `src/renderer/styles/avatarUI.css` |

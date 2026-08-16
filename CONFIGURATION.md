@@ -46,37 +46,44 @@ The built-in wizard provides an intuitive way to configure all settings:
 | Section | Description |
 |---------|-------------|
 | 🔧 **Basic** | Twitch Chat URL (required) |
-| 🎨 **Overlay** | Position, margins, bubble width |
-| ⚡ **Performance** | Message length, queue size, ignored users |
-| 🔬 **Advanced** | Debug mode, diagnostics, devtools |
+| 🎨 **Overlay** | Display (monitor), position, margins, bubble width, attention pause |
+| 🔔 **Sound** | Enable/disable, output device, custom file, volume |
+| ⚡ **Performance** | Message length, ignored users, command prefix |
+| 🔬 **Advanced** | Queue size, exit animation, diagnostics, debug frame, devtools |
 
 ### Features
 
 - 🌍 **Language Toggle** — Switch between English and Portuguese
-- 🎯 **Presets** — Quick setup for common scenarios
-- ✅ **Validation** — Real-time error checking
-- 🧪 **Test Connection** — Verify your Twitch URL works
+- 🎯 **Presets** — Adjust the timing knobs without touching anything else
+- ✅ **Validation** — Real-time error checking; Start stays disabled until the config is valid
+- 🧪 **Test Connection** — Verify your Twitch URL loads
+- 🖥️ **Display preview** — Selecting a monitor flashes a green border on it
+- 🏷️ **Override badges** — A field set by an environment variable is marked `ENV` and locked
 
 ---
 
 ## 🔧 Environment Variables
 
-For advanced users, all settings can be configured via environment variables. These override wizard settings.
+Every setting except **Language** and **Display** can be set through the environment. These override
+values saved by the wizard, and the wizard marks such fields with an `ENV` badge and disables them.
+
+Defaults below come from `src/config/schema.ts`, which is the single source of truth.
 
 ### Required
 
 | Variable | Description |
 |----------|-------------|
-| `TWITCH_CHAT_URL` | 📺 Twitch popout chat URL |
+| `TWITCH_CHAT_URL` | 📺 Twitch popout chat URL. Must be a `twitch.tv` host |
 
-### Display Settings
+### Overlay
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DISPLAY_SECONDS` | `5` | ⏱️ How long each message is shown |
-| `OVERLAY_ANCHOR` | `bottom-left` | 📍 Overlay position |
-| `OVERLAY_MARGIN` | `24` | 📏 Margin from screen edge (px) |
-| `BUBBLE_MAX_WIDTH` | `420` | 📐 Maximum bubble width (px) |
+| `DISPLAY_SECONDS` | `5` | ⏱️ How long each message is shown (1–60) |
+| `OVERLAY_ANCHOR` | `bottom-left` | 📍 Corner the bubble appears in |
+| `OVERLAY_MARGIN` | `24` | 📏 Margin from the screen edge, px (0–200) |
+| `BUBBLE_MAX_WIDTH` | `420` | 📐 Maximum bubble width, px (120–800) |
+| `ATTENTION_PAUSE_MS` | `500` | 🎬 Pause before the avatar speaks, ms (0–3000). `0` disables it |
 
 ### Overlay Position Options
 
@@ -91,24 +98,39 @@ For advanced users, all settings can be configured via environment variables. Th
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MAX_MESSAGE_LENGTH` | `140` | ✂️ Truncate longer messages |
-| `IGNORE_COMMAND_PREFIX` | `!` | 🚫 Ignore messages starting with this |
-| `IGNORE_USERS` | — | 👤 Comma-separated usernames |
-| `MAX_QUEUE_LENGTH` | `50` | 📚 Max queued messages |
+| `MAX_MESSAGE_LENGTH` | `140` | ✂️ Truncate longer messages (10–500) |
+| `IGNORE_COMMAND_PREFIX` | `!` | 🚫 Ignore messages starting with this. Empty disables it |
+| `IGNORE_USERS` | — | 👤 Comma-separated usernames, case-insensitive |
 
-### Animation
+### Queue and animation
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `EXIT_ANIMATION_MS` | `400` | 🎬 Exit animation duration (ms) |
+| `MAX_QUEUE_LENGTH` | `50` | 📚 Max queued messages (1–500). Oldest are dropped |
+| `EXIT_ANIMATION_MS` | `400` | 🎞️ Exit animation duration, ms (0–2000) |
+
+### Notification sound
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NOTIFICATION_SOUND_ENABLED` | `1` | 🔔 `0` disables the sound |
+| `NOTIFICATION_SOUND_FILE` | — | 🎵 Full path to an audio file. Empty uses the bundled default |
+| `NOTIFICATION_SOUND_VOLUME` | `50` | 🔊 Volume (0–100) |
+| `NOTIFICATION_SOUND_DEVICE` | — | 🎧 Audio output device ID. Empty uses the system default |
+
+Supported formats for a custom file: `.mp3`, `.wav`, `.ogg`, `.m4a`. Anything else is refused and
+the sound stays off.
 
 ### Debug
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DIAGNOSTICS` | `0` | 🔍 Enable diagnostic logs |
-| `OVERLAY_DEBUG` | `0` | 🐛 Show debug UI frame |
-| `DEVTOOLS` | `0` | 🛠️ Open DevTools on start |
+| `DIAGNOSTICS` | `0` | 🔍 Diagnostic logs, including chat message contents |
+| `OVERLAY_DEBUG` | `0` | 🐛 Debug frame and live counters on the overlay |
+| `DEVTOOLS` | `0` | 🛠️ Open DevTools on start (development only) |
+
+> ℹ️ **Not available as environment variables:** the UI language and the monitor selection. Both are
+> set in the wizard and stored in `config.json`.
 
 ---
 
@@ -190,36 +212,39 @@ setx TWITCH_CHAT_URL "https://www.twitch.tv/popout/YOURNAME/chat?popout="
 
 ## 🎯 Presets
 
-Quick configurations for common streaming scenarios:
+A preset changes **only the timing settings it declares**. Everything else you have already
+configured — the Twitch URL above all, plus language, monitor, position and sound — is left alone.
+
+Values below come from `PRESETS` in `src/config/defaults.ts`.
 
 ### Default
-| Setting | Value |
-|---------|-------|
-| Display Time | 5 seconds |
-| Max Queue | 50 messages |
-| Exit Animation | 400ms |
 
-**Best for:** Most streams with moderate chat activity
+Declares nothing, so selecting it changes nothing. It is there as the "no preset" entry; use
+**Reset to Defaults** in the footer to actually restore every setting.
 
 ### Fast-Paced Chat
+
 | Setting | Value |
 |---------|-------|
-| Display Time | 3 seconds |
-| Max Queue | 100 messages |
+| Display Duration | 3 seconds |
+| Max Queue Length | 100 messages |
 | Max Message Length | 100 characters |
-| Exit Animation | 250ms |
+| Exit Animation | 250 ms |
+| Attention Pause | 500 ms |
 
-**Best for:** High-activity streams with rapid chat
+**Best for:** high-activity streams with rapid chat.
 
 ### Cozy Stream
+
 | Setting | Value |
 |---------|-------|
-| Display Time | 8 seconds |
-| Max Queue | 20 messages |
+| Display Duration | 8 seconds |
+| Max Queue Length | 20 messages |
 | Max Message Length | 200 characters |
-| Exit Animation | 500ms |
+| Exit Animation | 500 ms |
+| Attention Pause | 1500 ms |
 
-**Best for:** Relaxed streams with slower chat
+**Best for:** relaxed streams with slower chat.
 
 ---
 
@@ -285,7 +310,11 @@ Quick configurations for common streaming scenarios:
 **Solutions:**
 1. ✅ Make sure you click "Start Overlay" to save
 2. ✅ Check file permissions in the config directory
-3. ✅ Look for `config.backup.json` if main config is corrupted
+3. ✅ Look for `config.backup.json` if the main config is corrupted — the app restores from it
+   automatically and tells you it did
+
+Config is written to a temporary file and renamed into place, so an interrupted save cannot leave
+a half-written `config.json`.
 </details>
 
 ---

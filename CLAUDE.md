@@ -28,19 +28,22 @@
 ```
 src/
 ├── 📁 main/               # Electron main process
-│   ├── index.ts           # Entry point, creates overlay window
-│   ├── chatSource.ts      # Twitch DOM observer (BrowserView)
+│   ├── index.ts           # Entry point, overlay window, system tray
+│   ├── chatSource.ts      # Twitch DOM observer (hidden BrowserWindow)
 │   ├── configWindow.ts    # Configuration wizard window
-│   └── ipcHandlers.ts     # IPC communication handlers
+│   ├── ipcHandlers.ts     # IPC communication handlers
+│   └── testConnection.ts  # "Test" button in the wizard
 ├── 📁 preload/            # Preload scripts
 │   ├── index.ts           # Overlay contextBridge
 │   └── configPreload.ts   # Config window contextBridge
 ├── 📁 renderer/           # Renderer processes
-│   ├── 📁 overlay/        # Main overlay UI
-│   │   ├── scripts/       # displayController, avatarUI, avatarAnimator
-│   │   └── styles/        # CSS
+│   ├── index.html         # Overlay page
+│   ├── scripts/           # displayController, avatarUI, avatarAnimator, notificationSound
+│   ├── styles/            # Overlay CSS
+│   ├── assets/            # Notification sounds
 │   └── 📁 config/         # Configuration wizard
-│       ├── scripts/       # configApp.ts (form controller)
+│       ├── index.html
+│       ├── scripts/       # configApp.ts, configValues.ts
 │       └── styles/        # Dark theme CSS
 ├── 📁 config/             # Configuration logic
 │   ├── types.ts           # TypeScript interfaces
@@ -48,29 +51,34 @@ src/
 │   ├── defaults.ts        # Defaults + presets
 │   ├── store.ts           # JSON persistence
 │   └── merge.ts           # Config merge logic
-└── 📁 shared/types/       # Shared TypeScript types
-    └── config.ts          # ChatMessage, OverlayConfig
+└── 📁 shared/             # Shared between processes
+    ├── types/             # ChatMessage, OverlayConfig
+    ├── boundedIdSet.ts    # Bounded dedup cache
+    ├── displays.ts        # Monitor resolution
+    └── hostnames.ts       # Domain suffix matching
 
-dist/                      # Compiled JavaScript (generated)
+tests/                     # Unit tests (node:test), compiled to dist-tests/
+dist/                      # Compiled JavaScript (generated, packaged)
 ```
-
----
 
 ## 🔧 Commands
 
 | Command | Description |
 |---------|-------------|
+| `npm run lint` | 🧹 ESLint (type-aware) over src/, tests/ and scripts/ |
 | `npm run typecheck` | ✅ Type check without compiling |
+| `npm test` | 🧪 Compile tests to dist-tests/ and run them |
+| `npm run check-packaging` | 📦 Windows launchers vs `build.productName` |
 | `npm run build:ts` | 🔨 Compile TypeScript to dist/ |
 | `npm start` | 🚀 Run app (auto-compiles) |
 | `npm run start:diag` | 🔍 Run with diagnostics enabled |
 
----
+CI runs lint, typecheck, check-packaging, test and build, in that order.
 
 ## 🔄 Data Flow
 
 ```
-1. chatSource.ts    → Observes Twitch chat DOM via BrowserView
+1. chatSource.ts    → Observes Twitch chat DOM in a hidden BrowserWindow
 2. IPC              → Messages sent to renderer process
 3. displayController.ts → Manages queue and timing
 4. avatarUI.ts      → Renders avatar + speech bubble
@@ -81,26 +89,21 @@ dist/                      # Compiled JavaScript (generated)
 
 ## ⚙️ Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TWITCH_CHAT_URL` | — | 📺 Twitch popout URL (**required**) |
-| `DISPLAY_SECONDS` | `5` | ⏱️ Message display duration |
-| `OVERLAY_ANCHOR` | `bottom-left` | 📍 Position on screen |
-| `OVERLAY_MARGIN` | `24` | 📏 Margin in pixels |
-| `MAX_MESSAGE_LENGTH` | `140` | ✂️ Truncate long messages |
-| `IGNORE_COMMAND_PREFIX` | `!` | 🚫 Ignore commands |
-| `IGNORE_USERS` | — | 👤 Ignored usernames (comma-separated) |
-| `DIAGNOSTICS` | `0` | 🔍 Enable diagnostic logs |
-
----
+`src/config/schema.ts` is the single source of truth — every field's `envVar` and `default` live
+there. Read it rather than copying the list; `language` and `displayId` have no environment
+variable.
 
 ## 📝 Code Conventions
 
 - ✅ TypeScript strict mode (`strict: true`)
 - ✅ CommonJS for Electron compatibility
 - ✅ Shared types in `src/shared/types/`
-- ✅ Renderer scripts loaded via `<script>` tags
 - ✅ GSAP copied to `dist/renderer/vendor/`
+- ⚠️ **The renderer has no module bundler.** Every renderer file is loaded by its own `<script>`
+  tag over a shared `var exports = {}` shim, and publishes itself on `window`
+  (`if (typeof window !== 'undefined') { window.X = X; }`). Only `import type` is safe there — a
+  value import emits a `require()` the browser cannot resolve, and `tsc` will not catch it. To add
+  a module, add a `<script>` tag and a `window` declaration in the matching `global.d.ts`.
 
 ---
 
@@ -109,9 +112,10 @@ dist/                      # Compiled JavaScript (generated)
 | Aspect | Detail |
 |--------|--------|
 | **Overlay Window** | Transparent, ignores mouse events |
-| **Chat Source** | Uses MutationObserver on Twitch DOM |
-| **Deduplication** | Messages filtered by ID |
+| **Chat Source** | MutationObserver injected into a hidden BrowserWindow |
+| **Deduplication** | Three layers: a WeakSet of DOM nodes, then a bounded id cache in each process |
 | **Queue** | Limited size, drops oldest when full |
+| **Display Sequence** | entrance → attention pause → reading → display timer → exit; failures are contained and the next message still runs |
 | **Config Storage** | JSON in `app.getPath('userData')` |
 | **i18n** | English + Portuguese in config wizard |
 | **Multi-Monitor** | Uses `screen.getAllDisplays()` for selection |
