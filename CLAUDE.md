@@ -46,7 +46,7 @@ src/
 │   └── 📁 config/         # Configuration wizard
 │       ├── index.html
 │       ├── locales/       # en.json, pt.json (wording lives here, not in TS)
-│       ├── scripts/       # configValues.ts, configForm.ts, configApp.ts
+│       ├── scripts/       # configValues, configForm, configApp, bubblePreview
 │       └── styles/        # Dark theme CSS
 ├── 📁 config/             # Configuration logic
 │   ├── types.ts           # TypeScript interfaces
@@ -55,10 +55,11 @@ src/
 │   ├── store.ts           # JSON persistence
 │   └── merge.ts           # Config merge logic
 └── 📁 shared/             # Shared between processes
-    ├── types/             # ChatMessage, OverlayConfig
+    ├── types/             # ChatMessage, OverlayConfig, AuthorStyle
     ├── boundedIdSet.ts    # Bounded dedup cache
     ├── displays.ts        # Monitor resolution
-    └── hostnames.ts       # Domain suffix matching
+    ├── platforms.ts       # Supported platforms and their labels
+    └── hostnames.ts       # Domain matching, URL -> platform
 
 tests/                     # Unit tests (node:test), compiled to dist-tests/
 dist/                      # Compiled JavaScript (generated, packaged)
@@ -126,6 +127,8 @@ variable.
 | **Display Sequence** | entrance → attention pause → reading → display timer → exit; failures are contained and the next message still runs |
 | **Config Storage** | JSON in `app.getPath('userData')` |
 | **i18n** | English + Portuguese in config wizard |
+| **Author styling** | `authorStyle` (schema, env `AUTHOR_STYLE`, default `subtle`) becomes `data-author-style` on the bubble; each of the five treatments is a CSS rule, nothing branches in TS |
+| **Wizard preview** | `bubblePreview.ts` renders the bubble using the **overlay's** `avatarUI.css`; never restyle the bubble in `configWindow.css` or the preview stops matching |
 | **Multi-Monitor** | Uses `screen.getAllDisplays()` for selection |
 
 ---

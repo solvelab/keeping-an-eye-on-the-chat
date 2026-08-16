@@ -151,16 +151,23 @@ src/renderer/
     ├── index.html     # Wizard page
     ├── locales/       # ← en.json / pt.json — edit wording here, not in TypeScript
     ├── scripts/       # ← Config UI logic
-    │   ├── configValues.ts  # value coercion and preset merging
-    │   ├── configForm.ts    # schema -> DOM
-    │   └── configApp.ts     # state, IPC and events
+    │   ├── configValues.ts   # value coercion and preset merging
+    │   ├── configForm.ts     # schema -> DOM
+    │   ├── bubblePreview.ts  # live bubble, styled by the overlay's own CSS
+    │   └── configApp.ts      # state, IPC and events
     ├── styles/        # ← Config styles
     └── assets/        # Wizard logo
 ```
 
-The wizard loads four scripts, in this order: `translations.js` (generated from `locales/*.json` by
-`copy-assets.js`), `configValues.js`, `configForm.js`, `configApp.js`. Order matters — each reads
-what the previous ones published on `window`.
+The wizard loads its scripts in this order: `translations.js` (generated from `locales/*.json` by
+`copy-assets.js`), `configValues.js`, `platforms.js`, `configForm.js`, `bubblePreview.js`,
+`configApp.js`. Order matters — each reads what the previous ones published on `window`.
+
+The wizard also loads the **overlay's** stylesheet, `../styles/avatarUI.css`, so the bubble preview
+is drawn by the same rules the overlay uses. Only the preview's container is overridden locally
+(`.avatar-ui` is `position: fixed` and has to sit in the form). Restyling the bubble, the author or
+the platform badge inside `configWindow.css` would make the preview lie, which is the one failure
+this arrangement exists to prevent.
 
 > ⚠️ The renderer has **no module bundler**. Every file is loaded by its own `<script>` tag and
 > publishes itself on `window` (see `displayController.ts` or `configValues.ts`). A runtime
@@ -169,10 +176,16 @@ what the previous ones published on `window`.
 
 #### 📝 Shared Types
 ```
-src/shared/types/
-├── index.ts           # Export all types
-├── config.ts          # Config types
-└── yourTypes.ts       # ← Add here
+src/shared/
+├── types/
+│   ├── index.ts       # Export all types
+│   ├── config.ts      # OverlayConfig, OverlayAnchor, AuthorStyle
+│   ├── chatMessage.ts # ChatMessage, RawChatItem
+│   └── yourTypes.ts   # ← Add here
+├── platforms.ts       # Supported platforms and their labels
+├── hostnames.ts       # Domain suffix matching, URL -> platform
+├── boundedIdSet.ts    # Bounded dedup cache
+└── displays.ts        # Monitor resolution
 ```
 
 ## 🎨 Code Style
@@ -245,6 +258,10 @@ npm run build:ts
 npm run start:diag
 
 # 8. Test with a live Twitch and/or Kick chat if possible (an offline channel produces no messages)
+# 9. If the change alters the wizard or the overlay's appearance, refresh the screenshots:
+#      npm run build:ts && npm run capture-screenshots
+#    Run it on Windows or macOS — under WSL the flag emoji render as empty boxes.
+#    The tray menu (configuration-02.png) is drawn by the OS and must be captured by hand.
 ```
 
 ### Required check

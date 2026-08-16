@@ -77,6 +77,8 @@ lightweight, and every addition is weighed against that.
 
 ## Domain Context
 
+- **Author style** — how a chatter's name is set apart from their message in the bubble. One of five
+  designed treatments, chosen by the streamer (`authorStyle`) and previewed live in the wizard.
 - **Popout chat** — a platform's standalone chat page: `twitch.tv/popout/<channel>/chat` or
   `kick.com/popout/<channel>/chat`. The app observes its DOM in a hidden window; there is no API
   integration and no authentication on either platform.

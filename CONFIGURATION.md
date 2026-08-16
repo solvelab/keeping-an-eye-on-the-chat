@@ -7,6 +7,7 @@ Complete guide for configuring **Keeping an Eye on the Chat**.
 - [Quick Start](#-quick-start)
 - [Configuration Wizard](#-configuration-wizard)
 - [Environment Variables](#-environment-variables)
+- [System Tray](#️-system-tray)
 - [Windows Setup](#-windows-setup)
 - [Presets](#-presets)
 - [Troubleshooting](#-troubleshooting)
@@ -177,6 +178,28 @@ the sound stays off.
 
 > ℹ️ **Not available as environment variables:** the UI language and the monitor selection. Both are
 > set in the wizard and stored in `config.json`.
+
+---
+
+## 🖥️ System Tray
+
+Once the overlay is running it has no window you can click: it is transparent, click-through, and
+absent from the taskbar. The system tray icon is how you reach it.
+
+Right-click the icon:
+
+| Item | What it does |
+|------|--------------|
+| **Mute / Unmute Sound** | Silences the notification sound without opening the wizard |
+| **Stop / Start Overlay** | Takes the overlay off screen and stops watching chat, leaving the app running. Starting again reuses the settings already in use, so the wizard does not reopen |
+| **Open Settings** | Opens the configuration wizard |
+| **Quit** | Ends the application |
+
+Double-clicking the icon opens the settings directly.
+
+> 💡 **Stopping is not quitting.** Use **Stop Overlay** between scenes or when you want the chat
+> watcher off for a while — it releases the hidden browser pages each platform uses, which is where
+> almost all of the app's memory goes. **Quit** is what ends the app.
 
 ---
 

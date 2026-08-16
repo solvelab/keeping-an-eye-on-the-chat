@@ -66,6 +66,9 @@ jobs:
       - name: Packaging consistency
         run: npm run check-packaging
 
+      - name: Documentation paths
+        run: npm run check-doc-paths
+
       - name: Unit tests
         run: npm test
 

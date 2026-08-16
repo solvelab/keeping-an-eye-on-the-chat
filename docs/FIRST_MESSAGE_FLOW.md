@@ -171,6 +171,32 @@ The message that reaches the renderer has exactly `id`, `platform`, `user`, `tex
 There is no avatar image in it — the avatar is a styled DOM element. The overlay shows `platform` as
 a small badge on the bubble, positioned absolutely so it cannot shift the layout.
 
+## How the bubble is built
+
+The bubble holds three elements, not one string:
+
+| Element | Holds |
+|---|---|
+| `.avatar-ui__platform` | the origin badge, absolutely positioned |
+| `.avatar-ui__author` | who spoke |
+| `.avatar-ui__message` | what they said |
+
+Author and message were a single text node — `` `${user}: ${text}` `` — until the streamer could
+choose how the name reads. The `authorStyle` setting (`src/config/schema.ts`, env `AUTHOR_STYLE`,
+default `subtle`) reaches the bubble as `data-author-style`, and every treatment is a CSS rule in
+`src/renderer/styles/avatarUI.css`. Nothing branches in JavaScript beyond setting the attribute.
+
+Two consequences worth knowing before changing this code:
+
+- **The colon belongs to the author element**, and only the treatments that keep the name inline and
+  full-size (`plain`, `tinted`) carry it. On a chip or an eyebrow label it would read as a typo.
+- **The space between name and message is CSS, not a text node.** So `.avatar-ui__text`'s
+  `textContent` reads them glued, which is expected — a text node would survive into the treatments
+  that stack the two, where it has no business being.
+
+The wizard previews all of this: `src/renderer/config/scripts/bubblePreview.ts` renders the same
+markup and loads `avatarUI.css` itself, so the preview cannot drift from the overlay.
+
 ## Deduplication (three layers)
 
 | Layer | Where | Bounded by |
@@ -246,4 +272,6 @@ nothing however full its chat page looks.
 | Bubble and avatar DOM | `src/renderer/scripts/avatarUI.ts` |
 | GSAP animation | `src/renderer/scripts/avatarAnimator.ts` |
 | Notification sound | `src/renderer/scripts/notificationSound.ts` |
+| Configuration wizard scripts | `src/renderer/config/scripts/` (`configApp.ts`, `configForm.ts`, `configValues.ts`) |
+| Bubble preview in the wizard | `src/renderer/config/scripts/bubblePreview.ts` |
 | Visual transitions | `src/renderer/styles/avatarUI.css` |
