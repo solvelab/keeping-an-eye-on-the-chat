@@ -64,7 +64,7 @@ The built-in wizard provides an intuitive way to configure all settings:
 | Section | Description |
 |---------|-------------|
 | 🔧 **Basic** | Twitch Chat URL and Kick Chat URL — at least one is required |
-| 🎨 **Overlay** | Display (monitor), position, margins, bubble width, author's name style, attention pause |
+| 🎨 **Overlay** | Display (monitor), position, margins, bubble width, author's name style with a live preview, attention pause |
 | 🔔 **Sound** | Enable/disable, output device, custom file, volume |
 | ⚡ **Performance** | Message length, ignored users, command prefix |
 | 🔬 **Advanced** | Queue size, exit animation, diagnostics, debug frame, devtools |
@@ -124,6 +124,12 @@ Five designed treatments; the wizard offers the same list.
 
 In every treatment the name and the message are kept apart, and a long name wraps rather than
 widening the bubble or running under the platform badge.
+
+The **Overlay** section carries a live preview of the bubble, right below this setting, so a
+treatment can be judged before starting the overlay. It reacts to the treatment and to the bubble
+width, shows the badge of whichever platforms you configured, and has a **Long name** button for the
+25-character case that breaks layouts. The preview is drawn with the overlay's own stylesheet, so it
+cannot drift from what you will actually see on stream.
 
 ### Overlay Position Options
 

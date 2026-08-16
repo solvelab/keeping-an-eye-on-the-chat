@@ -89,6 +89,13 @@ declare global {
     configAPI: ConfigAPI;
     configValues: typeof import('./configValues');
     configForm: typeof import('./configForm');
+    bubblePreview: typeof import('./bubblePreview');
+    /** The shared platform table, loaded by its own <script> tag. */
+    platforms: {
+      PLATFORMS: readonly import('../../../shared/platforms').Platform[];
+      PLATFORM_LABELS: Record<import('../../../shared/platforms').Platform, string>;
+      isPlatform: (value: unknown) => boolean;
+    };
     /** Generated from the locale JSON by scripts/copy-assets.js. */
     configTranslations: Record<string, Record<string, string>>;
   }

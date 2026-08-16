@@ -9,6 +9,11 @@
     />
     <title>Configuration - Keeping an Eye on the Chat</title>
     <link rel="stylesheet" href="./styles/configWindow.css" />
+    <!--
+      The overlay's own stylesheet, so the preview cannot drift from what the
+      overlay draws. Only the container is overridden, in configWindow.css.
+    -->
+    <link rel="stylesheet" href="../styles/avatarUI.css" />
   </head>
   <body>
     <div class="config-app">
@@ -60,16 +65,21 @@
             <div class="section-content" id="section-basic"></div>
           </section>
 
-          <!-- Overlay Section (collapsible, collapsed by default) -->
-          <section class="config-section config-section--collapsed" data-section="overlay">
+          <!--
+            Overlay Section (collapsible, open by default).
+
+            It holds the settings a streamer wants first and the bubble preview,
+            and it was collapsed: the author-style setting shipped invisible.
+          -->
+          <section class="config-section" data-section="overlay">
             <h2 class="section-title section-title--collapsible">
-              <button type="button" class="section-toggle" id="overlayToggle" aria-expanded="false">
+              <button type="button" class="section-toggle" id="overlayToggle" aria-expanded="true">
                 <span class="section-icon">&#9638;</span>
                 <span id="sectionOverlayTitle">Overlay Settings</span>
-                <span class="toggle-icon" aria-hidden="true">+</span>
+                <span class="toggle-icon" aria-hidden="true">-</span>
               </button>
             </h2>
-            <div class="section-content" id="section-overlay" hidden></div>
+            <div class="section-content" id="section-overlay"></div>
           </section>
 
           <!-- Sound Section (collapsible, collapsed by default) -->
@@ -143,7 +153,9 @@
          Must precede configApp.js, which reads window.configTranslations. -->
     <script src="./scripts/translations.js"></script>
     <script src="./scripts/configValues.js"></script>
+    <script src="../../shared/platforms.js"></script>
     <script src="./scripts/configForm.js"></script>
+    <script src="./scripts/bubblePreview.js"></script>
     <script src="./scripts/configApp.js"></script>
   </body>
 </html>
