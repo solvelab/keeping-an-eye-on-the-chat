@@ -31,6 +31,9 @@ const ALLOWED_ANCHORS = new Set<OverlayAnchor>([
 let mainProcessConfig: OverlayConfig | null = null;
 let configResolvers: Array<(config: OverlayConfig) => void> = [];
 
+/** Exposed for tests: how many waiters are still registered. */
+export const __pendingConfigResolvers = (): number => configResolvers.length;
+
 // Listen for config from main process
 ipcRenderer.on('set-config', (_event, config: OverlayConfig) => {
   mainProcessConfig = config;
@@ -164,19 +167,23 @@ contextBridge.exposeInMainWorld('overlayChat', {
     }
     // Otherwise wait for it with a timeout
     return new Promise((resolve) => {
+      // Registered and removed by identity. The previous version looked up
+      // `resolve`, which is not what was pushed, so `indexOf` always returned
+      // -1 and the stale entry was kept forever.
+      const settle = (config: OverlayConfig): void => {
+        clearTimeout(timeout);
+        resolve(config);
+      };
+
       const timeout = setTimeout(() => {
-        // Timeout: remove resolver and return fallback
-        const index = configResolvers.indexOf(resolve);
+        const index = configResolvers.indexOf(settle);
         if (index >= 0) {
           configResolvers.splice(index, 1);
         }
         resolve(parseEnvConfig());
       }, timeoutMs);
 
-      configResolvers.push((config) => {
-        clearTimeout(timeout);
-        resolve(config);
-      });
+      configResolvers.push(settle);
     });
   },
 });

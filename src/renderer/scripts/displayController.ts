@@ -228,7 +228,48 @@ export class DisplayController {
     }
   }
 
+  /**
+   * Run one message's display sequence, containing any failure.
+   *
+   * Without this wrapper a throwing callback left `phase` at 'showing' forever:
+   * `startNextIfIdle` then refused every subsequent message, so the overlay
+   * died silently mid-stream and the queue quietly filled up and dropped
+   * messages. One bad message must cost one message, not the session.
+   */
   private async runDisplaySequence(message: ChatMessage, token: number): Promise<void> {
+    try {
+      await this.runDisplaySteps(message, token);
+    } catch (error) {
+      this.recoverFromSequenceFailure(error, token);
+    }
+  }
+
+  /**
+   * Return the controller to idle after a failed sequence and move on.
+   */
+  private recoverFromSequenceFailure(error: unknown, token: number): void {
+    const reason = error instanceof Error ? error.message : String(error);
+    console.error(`[overlay] display sequence failed: ${reason}`, error);
+    this.logDiagnostics(`DISPLAY_FAILED reason=${reason}`);
+
+    // A superseded sequence must not touch state: the sequence that replaced it
+    // already owns the phase.
+    if (!this.isSequenceActive(token)) {
+      return;
+    }
+
+    this.clearTimers();
+    if (typeof this.onDisplay.cancel === 'function') {
+      this.onDisplay.cancel();
+    }
+
+    this.activeMessage = null;
+    this.phase = 'idle';
+    this.emitUpdate();
+    this.startNextIfIdle();
+  }
+
+  private async runDisplaySteps(message: ChatMessage, token: number): Promise<void> {
     const playEntranceAnimation = this.onDisplay.playEntranceAnimation;
     const playAttentionPause = this.onDisplay.playAttentionPause;
     const playReadingAnimation = this.onDisplay.playReadingAnimation;

@@ -14,6 +14,27 @@ let configStore: ConfigStore;
 let currentTrackedConfig: TrackedConfig | null = null;
 let diagnosticsEnabled = false;
 let displayIndicatorWindow: BrowserWindow | null = null;
+let displayIndicatorTimer: NodeJS.Timeout | null = null;
+
+/**
+ * Close the display indicator and cancel its auto-close timer.
+ *
+ * The timer has to be cancelled together with the window: a leftover timer from
+ * a previous indicator would fire while the *new* one is on screen and close it
+ * early, which is what happened when switching monitors quickly.
+ */
+function closeDisplayIndicator(): void {
+  if (displayIndicatorTimer) {
+    clearTimeout(displayIndicatorTimer);
+    displayIndicatorTimer = null;
+  }
+
+  if (displayIndicatorWindow && !displayIndicatorWindow.isDestroyed()) {
+    displayIndicatorWindow.close();
+  }
+
+  displayIndicatorWindow = null;
+}
 
 /**
  * Create a serializable version of the schema (without functions).
@@ -172,11 +193,8 @@ export function setupConfigIPC(diagnostics = false): void {
 
   // Show a visual indicator on a specific display (for preview when selecting)
   ipcMain.handle('config:showDisplayIndicator', (_event, displayId: number) => {
-    // Close any existing indicator
-    if (displayIndicatorWindow && !displayIndicatorWindow.isDestroyed()) {
-      displayIndicatorWindow.close();
-      displayIndicatorWindow = null;
-    }
+    // Close any existing indicator, cancelling its pending auto-close
+    closeDisplayIndicator();
 
     // Find the target display
     const displays = screen.getAllDisplays();
@@ -266,11 +284,9 @@ export function setupConfigIPC(diagnostics = false): void {
     displayIndicatorWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(indicatorHtml)}`);
 
     // Auto-close after 2.5 seconds
-    setTimeout(() => {
-      if (displayIndicatorWindow && !displayIndicatorWindow.isDestroyed()) {
-        displayIndicatorWindow.close();
-        displayIndicatorWindow = null;
-      }
+    displayIndicatorTimer = setTimeout(() => {
+      displayIndicatorTimer = null;
+      closeDisplayIndicator();
     }, 2500);
 
     return { success: true };
