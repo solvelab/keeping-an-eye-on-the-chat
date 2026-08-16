@@ -187,6 +187,7 @@ via environment variables. They override values saved by the wizard.
 | `OVERLAY_ANCHOR` | `bottom-left` | 📍 Position: `bottom-left`, `bottom-right`, `top-left`, `top-right` |
 | `OVERLAY_MARGIN` | `24` | 📏 Margin from screen edge (pixels) |
 | `BUBBLE_MAX_WIDTH` | `420` | 📐 Maximum bubble width (pixels) |
+| `AUTHOR_STYLE` | `subtle` | 🏷️ How the chatter's name reads: `plain`, `tinted`, `label`, `subtle`, `chip` |
 | `ATTENTION_PAUSE_MS` | `500` | 🎬 Pause before the avatar speaks (ms). `0` disables it |
 | `MAX_MESSAGE_LENGTH` | `140` | ✂️ Truncate messages longer than this |
 | `IGNORE_COMMAND_PREFIX` | `!` | 🚫 Ignore messages starting with this (empty disables) |

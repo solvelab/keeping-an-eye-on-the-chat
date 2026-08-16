@@ -185,3 +185,45 @@ test('merge: TWITCH_CHAT_URL keeps working, and KICK_CHAT_URL joins it', () => {
   assert.equal(sources.kickChatUrl, 'env');
   assert.deepEqual(validateConfig(values), {});
 });
+
+test('merge: a config saved before authorStyle existed gets the default', () => {
+  const savedByOldVersion = {
+    twitchChatUrl: 'https://www.twitch.tv/popout/somebody/chat',
+    displaySeconds: 6,
+  };
+
+  const { values, sources } = mergeConfig({ saved: savedByOldVersion, env: NO_ENV });
+
+  assert.equal(values.authorStyle, 'subtle');
+  assert.equal(sources.authorStyle, 'default');
+  assert.deepEqual(validateConfig(values), {});
+});
+
+test('merge: AUTHOR_STYLE picks the treatment from the environment', () => {
+  const { values, sources } = mergeConfig({
+    env: {
+      TWITCH_CHAT_URL: 'https://www.twitch.tv/popout/somebody/chat',
+      AUTHOR_STYLE: 'chip',
+    },
+  });
+
+  assert.equal(values.authorStyle, 'chip');
+  assert.equal(sources.authorStyle, 'env');
+});
+
+test('merge: an unknown AUTHOR_STYLE does not break the config', () => {
+  const { values } = mergeConfig({
+    env: {
+      TWITCH_CHAT_URL: 'https://www.twitch.tv/popout/somebody/chat',
+      AUTHOR_STYLE: 'neon-explosion',
+    },
+  });
+
+  // Whatever the merge does with it, the overlay must still start: either the
+  // value was rejected outright, or validation flags it for the wizard.
+  const errors = validateConfig(values);
+  assert.ok(
+    values.authorStyle === 'subtle' || errors.authorStyle,
+    `unknown style silently accepted as ${String(values.authorStyle)}`
+  );
+});

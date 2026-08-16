@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { CONFIG_SCHEMA, CONFIG_SECTIONS } from '../../src/config/schema';
 import { validateConfig } from '../../src/config/merge';
 import { getDefaults } from '../../src/config/defaults';
+import { AUTHOR_STYLES } from '../../src/shared/types';
 import type { AppConfig } from '../../src/config/types';
 
 /** Validate a single field through its schema validator. */
@@ -154,4 +155,33 @@ test('validateConfig: empty optional fields are skipped, not reported', () => {
   const errors = validateConfig(withValue('notificationSoundFile', ''));
 
   assert.deepEqual(errors, {});
+});
+
+test('authorStyle: accepts every designed treatment', () => {
+  for (const style of ['plain', 'tinted', 'label', 'subtle', 'chip']) {
+    assert.equal(check('authorStyle', style), null, `${style} should be valid`);
+  }
+});
+
+test('authorStyle: rejects anything that is not a designed treatment', () => {
+  assert.notEqual(check('authorStyle', 'fancy'), null);
+  assert.notEqual(check('authorStyle', ''), null);
+  assert.notEqual(check('authorStyle', 42), null);
+  assert.notEqual(check('authorStyle', undefined), null);
+});
+
+test('authorStyle: every schema option is a valid value, and vice versa', () => {
+  // The wizard renders the schema's options; a value the wizard can produce and
+  // the validator then rejects would be a dead end for the user.
+  const options = (CONFIG_SCHEMA.authorStyle.options || []).map((o) => String(o.value));
+
+  assert.deepEqual([...options].sort(), [...AUTHOR_STYLES].sort());
+  for (const value of options) {
+    assert.equal(check('authorStyle', value), null, `${value} is offered but rejected`);
+  }
+});
+
+test('authorStyle: the default is the one that ships selected', () => {
+  assert.equal(CONFIG_SCHEMA.authorStyle.default, 'subtle');
+  assert.equal(getDefaults().authorStyle, 'subtle');
 });

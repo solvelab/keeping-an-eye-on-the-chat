@@ -4,6 +4,24 @@
 export type OverlayAnchor = 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
 
 /**
+ * How the author's name is set apart from the message in the bubble.
+ *
+ * Each value is a designed treatment rather than a knob, so a streamer picks a
+ * finished look instead of assembling combinations nobody has seen. The overlay
+ * turns the value into a `data-author-style` attribute and the rest is CSS.
+ */
+export type AuthorStyle = 'plain' | 'tinted' | 'label' | 'subtle' | 'chip';
+
+/** Every author style, in the order the wizard presents them. */
+export const AUTHOR_STYLES: readonly AuthorStyle[] = [
+  'plain',
+  'tinted',
+  'label',
+  'subtle',
+  'chip',
+] as const;
+
+/**
  * Configuration options passed from preload to renderer.
  */
 export interface OverlayConfig {
@@ -15,6 +33,8 @@ export interface OverlayConfig {
   overlayMargin: number;
   /** Maximum width of chat bubble in pixels. */
   bubbleMaxWidth: number;
+  /** How the author's name is set apart from the message. */
+  authorStyle: AuthorStyle;
   /** Maximum message length before truncation. */
   maxMessageLength: number;
   /** Prefix for commands to ignore (e.g., "!"). */

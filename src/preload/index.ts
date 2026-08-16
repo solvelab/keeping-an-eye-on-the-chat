@@ -4,7 +4,7 @@
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ChatMessage, OverlayAnchor, OverlayConfig } from '../shared/types';
+import type { AuthorStyle, ChatMessage, OverlayAnchor, OverlayConfig } from '../shared/types';
 
 // Default values (used as fallback if main process config is not available)
 const DEFAULT_DISPLAY_SECONDS = 5;
@@ -13,6 +13,8 @@ const DEFAULT_MAX_MESSAGE_LENGTH = 140;
 const DEFAULT_IGNORE_COMMAND_PREFIX = '!';
 const DEFAULT_MAX_QUEUE_LENGTH = 50;
 const DEFAULT_OVERLAY_ANCHOR: OverlayAnchor = 'bottom-left';
+// Matches src/config/schema.ts -> authorStyle.default.
+const DEFAULT_AUTHOR_STYLE: AuthorStyle = 'subtle';
 const DEFAULT_OVERLAY_MARGIN = 24;
 const DEFAULT_EXIT_ANIMATION_MS = 400;
 // Must match src/config/schema.ts -> attentionPauseMs.default
@@ -27,6 +29,18 @@ const ALLOWED_ANCHORS = new Set<OverlayAnchor>([
   'bottom-right',
   'top-left',
   'top-right',
+]);
+
+// Listed rather than imported: the preload is sandboxed, so a value import here
+// compiles to a require it cannot resolve. `import type` is erased and stays
+// safe, and the AuthorStyle annotation is what keeps this list in step with the
+// shared type — dropping a value from it stops compiling.
+const ALLOWED_AUTHOR_STYLES = new Set<AuthorStyle>([
+  'plain',
+  'tinted',
+  'label',
+  'subtle',
+  'chip',
 ]);
 
 // Config received from main process (set via IPC)
@@ -71,6 +85,11 @@ function parseEnvConfig(): OverlayConfig {
   const bubbleMaxWidth = Number.isFinite(bubbleMaxWidthRaw)
     ? Math.max(120, bubbleMaxWidthRaw)
     : DEFAULT_BUBBLE_MAX_WIDTH;
+
+  const authorStyleRaw = (process.env.AUTHOR_STYLE || '') as AuthorStyle;
+  const authorStyle: AuthorStyle = ALLOWED_AUTHOR_STYLES.has(authorStyleRaw)
+    ? authorStyleRaw
+    : DEFAULT_AUTHOR_STYLE;
 
   const maxMessageLengthRaw = Number.parseInt(process.env.MAX_MESSAGE_LENGTH || '', 10);
   const maxMessageLength = Number.isFinite(maxMessageLengthRaw)
@@ -125,6 +144,7 @@ function parseEnvConfig(): OverlayConfig {
     overlayAnchor,
     overlayMargin,
     bubbleMaxWidth,
+    authorStyle,
     maxMessageLength,
     ignoreCommandPrefix,
     ignoreUsers,

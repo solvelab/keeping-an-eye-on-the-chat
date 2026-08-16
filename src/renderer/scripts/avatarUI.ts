@@ -1,4 +1,4 @@
-import type { ChatMessage, OverlayAnchor } from '../../shared/types';
+import type { AuthorStyle, ChatMessage, OverlayAnchor } from '../../shared/types';
 import type { Platform } from '../../shared/platforms';
 import type { AvatarAnimator } from './avatarAnimator';
 
@@ -7,6 +7,7 @@ interface AvatarUIOptions {
   anchor?: OverlayAnchor;
   margin?: number;
   bubbleMaxWidth?: number;
+  authorStyle?: AuthorStyle;
   diagnostics?: boolean;
 }
 
@@ -31,10 +32,19 @@ export class AvatarUI {
   private mouthInner: HTMLDivElement;
   private bubble: HTMLDivElement;
   private bubbleText: HTMLDivElement;
+  private bubbleAuthor: HTMLSpanElement;
+  private bubbleMessage: HTMLSpanElement;
   private platformBadge: HTMLDivElement;
   private animator: AvatarAnimator | null;
 
-  constructor({ root, anchor, margin, bubbleMaxWidth, diagnostics }: AvatarUIOptions) {
+  constructor({
+    root,
+    anchor,
+    margin,
+    bubbleMaxWidth,
+    authorStyle,
+    diagnostics
+  }: AvatarUIOptions) {
     this.root = root || document.body;
     this.container = document.createElement('div');
     this.container.className = 'avatar-ui';
@@ -76,6 +86,15 @@ export class AvatarUI {
     this.bubbleText = document.createElement('div');
     this.bubbleText.className = 'avatar-ui__text';
 
+    // Author and message are separate elements so a style can tell them apart.
+    // They were one string until the streamer could choose how the name reads.
+    this.bubbleAuthor = document.createElement('span');
+    this.bubbleAuthor.className = 'avatar-ui__author';
+    this.bubbleMessage = document.createElement('span');
+    this.bubbleMessage.className = 'avatar-ui__message';
+    this.bubbleText.appendChild(this.bubbleAuthor);
+    this.bubbleText.appendChild(this.bubbleMessage);
+
     // Which platform the message came from. Absolutely positioned inside the
     // bubble, so it cannot shift the text or disturb the avatar animation.
     this.platformBadge = document.createElement('div');
@@ -88,6 +107,7 @@ export class AvatarUI {
     this.root.appendChild(this.container);
     this.setPosition(anchor, margin);
     this.setBubbleMaxWidth(bubbleMaxWidth);
+    this.setAuthorStyle(authorStyle);
 
     this.animator = window.AvatarAnimator
       ? new window.AvatarAnimator({
@@ -114,7 +134,7 @@ export class AvatarUI {
     if (message) {
       const user = message.user || '';
       const text = message.text || '';
-      this.bubbleText.textContent = user ? `${user}: ${text}` : text;
+      this.setAuthorAndText(user, text);
       this.showPlatform(message.platform);
       const nextId = message.id || `${user}:${text}`;
       const shouldReplay = nextId !== this.activeMessageId;
@@ -187,6 +207,35 @@ export class AvatarUI {
       Number.isFinite(parsedWidth) && parsedWidth >= 120 ? parsedWidth : 420;
 
     this.container.style.setProperty('--bubble-max-width', `${safeWidth}px`);
+  }
+
+  /**
+   * Choose how the author's name is set apart from the message.
+   *
+   * Nothing branches on the value beyond this: the style becomes an attribute
+   * and the stylesheet does the rest, so adding a treatment is a CSS rule.
+   */
+  setAuthorStyle(style?: AuthorStyle): void {
+    const allowed = new Set<AuthorStyle>(['plain', 'tinted', 'label', 'subtle', 'chip']);
+    const safeStyle = style && allowed.has(style) ? style : 'subtle';
+
+    this.bubble.dataset.authorStyle = safeStyle;
+  }
+
+  /**
+   * Put the author and the message into the bubble.
+   *
+   * The colon belongs to the author element rather than to the message, because
+   * only some styles keep it: once the name is a chip or a label above the text,
+   * a trailing colon reads as a typo. The separating space is CSS, not a text
+   * node, so it cannot survive into a style that stacks the two.
+   */
+  private setAuthorAndText(user: string, text: string): void {
+    const style = this.bubble.dataset.authorStyle;
+    const keepsColon = style === 'plain' || style === 'tinted';
+
+    this.bubbleAuthor.textContent = user ? (keepsColon ? `${user}:` : user) : '';
+    this.bubbleMessage.textContent = text;
   }
 
   private replayEnterAnimation(): void {
