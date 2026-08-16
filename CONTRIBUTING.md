@@ -225,19 +225,22 @@ npm test
 # 4. Windows launchers still match build.productName
 npm run check-packaging
 
-# 5. Build succeeds
+# 5. No commit body accidentally declares a breaking change
+npm run check-commits
+
+# 6. Build succeeds
 npm run build:ts
 
-# 6. App runs correctly
+# 7. App runs correctly
 npm run start:diag
 
-# 7. Test with live Twitch chat if possible
+# 8. Test with live Twitch chat if possible
 ```
 
 ### Required check
 
 Opening a pull request against `master` runs the **`Lint, typecheck & test`** job, which executes
-steps 1–5 above. It is the check that must be green before a pull request is merged, and it is the
+steps 1–6 above. It is the check that must be green before a pull request is merged, and it is the
 job to select if branch protection is enabled on this repository.
 
 Release and artifact jobs never run on a pull request — a PR is validated, never published.
@@ -272,6 +275,28 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 | `refactor:` | Code restructuring |
 | `test:` | Adding tests |
 | `chore:` | Maintenance tasks |
+
+### Never begin a body line with "breaking change"
+
+The changelog parser reads a line starting with those words as a `BREAKING CHANGE` footer — **in any
+case, and with or without a colon**. Line wrapping is enough to trigger it:
+
+```
+electron-builder renamed the artifact to EyeOnChat in v1.0.0 (recorded as a
+breaking change in the changelog), but the launchers ...
+   ^ parsed as a BREAKING CHANGE footer
+```
+
+That released v2.0.0 instead of v1.2.0, with release notes made of a sentence fragment and no Bug
+Fixes section at all. Reword so those words do not start a line — or, when the change really is
+breaking, use the exact marker:
+
+```
+BREAKING CHANGE: notificationSoundFile must now be an absolute path.
+```
+
+`npm run check-commits` enforces this, and CI runs it over the commits each push or pull request
+adds.
 
 ### PR Description Template
 
