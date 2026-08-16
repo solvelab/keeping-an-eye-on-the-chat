@@ -1,21 +1,42 @@
 # [2.0.0](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v1.1.2...v2.0.0) (2026-08-16)
 
+> ⚠️ **Not a breaking release.** The major bump was an accident: a commit body wrapped the words
+> *"breaking change"* onto the start of a line, and the changelog parser reads that as a
+> `BREAKING CHANGE` footer regardless of case or punctuation. The correct version was **1.2.0**.
+> Nothing here changes a configuration format, an IPC contract or an artifact name. The tag stays as
+> published; the guard that prevents a repeat is #31.
+>
+> These notes were rewritten by hand, because the accidental footer swallowed the generated body.
 
-* 🐛 fix(packaging): launch EyeOnChat.exe from the Windows batch files ([26d0bdb](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/26d0bdbea57115f3c5e3b4127c9e70f018c22194))
+A full review sweep of the codebase: thirteen issues found, fixed, tested and merged.
 
+### Bug Fixes
 
-### BREAKING CHANGES
+* **config:** store `displayId` as a number so monitor selection works ([3c3a4a0](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/3c3a4a0)) — the wizard stored a `<select>` value as a string and the main process compared it with `===` against a numeric `Display.id`, so the overlay always fell back to the primary monitor
+* **packaging:** launch `EyeOnChat.exe` from the Windows batch files ([26d0bdb](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/26d0bdb)) — the shipped launchers called an executable no release contains
+* **release:** bump `package.json` on release instead of patching it in CI ([cc5a702](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/cc5a702)) — the version had been stuck at `0.0.0` since v1.0.0, so local builds produced unversioned artifacts
+* **config:** stop Test Connection failing on subframe load errors ([313d814](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/313d814)) — one blocked ad frame reported "Connection failed" for a page that had loaded fine
+* **overlay:** keep tray mute state in sync across overlay restarts ([1cc5abf](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/1cc5abf)) — muting then restarting from Settings brought the sound back while the menu still offered "Unmute"
+* **config:** apply presets without wiping the Twitch URL and language ([f612933](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/f612933)) — selecting a preset erased the one required field
+* **overlay:** contain failures in the display sequence ([da133ef](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/da133ef)) — a throwing animation callback froze the overlay permanently, silently, mid-stream
+* **security:** match `twitch.tv` by suffix, add an overlay CSP, write config atomically ([b699702](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/b699702)) — `hostname.includes('twitch.tv')` accepted lookalike hosts
 
-* in the changelog), but the launchers and CONFIGURATION.md kept
-calling "Keeping an Eye on the Chat.exe", which no release contains — so both
-batch files failed for anyone following the documented flow.
+### Performance
 
-The name now lives in a single APP_EXE variable per file, the launch resolves
-it relative to the script (%~dp0) so it works from any working directory, and
-a missing binary produces a readable message instead of a silent failure.
+* **overlay:** bound the message deduplication caches ([20709b1](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/20709b1)) — both processes retained every message id for the life of the stream
 
-set-channel.example.bat now lists every environment variable the schema
-declares, not just four.
+### Internal
+
+* **test:** unit suite for the configuration layer and display controller, 145 tests, no new dependency ([ccb0674](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/ccb0674), [1a82d46](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/1a82d46))
+* **ci:** the "Lint" job now lints; actions pinned to commit SHAs; packaging drift guarded ([70a5170](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/70a5170))
+* **refactor:** remove dead code and align config types with runtime ([7fb4dd4](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/7fb4dd4))
+* **docs:** correct the drift across README, docs and openspec ([de055a4](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/de055a4))
+
+### Upgrade notes
+
+None. Existing `config.json` files keep working — the `displayId` fix deliberately accepts the
+string value written by earlier versions, so no monitor needs to be reselected.
+
 
 ## [1.1.2](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v1.1.1...v1.1.2) (2026-03-31)
 

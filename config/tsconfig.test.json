@@ -12,7 +12,8 @@
       "node"
     ],
     "declaration": false,
-    "declarationMap": false
+    "declarationMap": false,
+    "allowJs": true
   },
   "include": [
     "../tests/**/*",
@@ -21,6 +22,7 @@
     "../src/main/**/*",
     "../src/renderer/scripts/**/*",
     "../src/renderer/config/scripts/**/*",
-    "../src/preload/**/*"
+    "../src/preload/**/*",
+    "../scripts/**/*.js"
   ]
 }

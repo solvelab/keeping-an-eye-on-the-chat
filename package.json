@@ -28,6 +28,7 @@
     "start:diag": "cross-env OVERLAY_DEBUG=1 DIAGNOSTICS=1 electron .",
     "lint": "eslint src tests scripts eslint.config.js",
     "check-packaging": "node scripts/check-packaging.js",
+    "check-commits": "node scripts/check-commit-notes.js",
     "typecheck": "tsc -p config/tsconfig.main.json --noEmit && tsc -p config/tsconfig.preload.json --noEmit && tsc -p config/tsconfig.renderer.json --noEmit",
     "build:test": "node scripts/clean-dist-tests.js && tsc -p config/tsconfig.test.json",
     "test": "npm run build:test && node scripts/run-tests.js",

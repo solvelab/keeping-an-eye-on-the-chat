@@ -69,11 +69,12 @@ dist/                      # Compiled JavaScript (generated, packaged)
 | `npm run typecheck` | ✅ Type check without compiling |
 | `npm test` | 🧪 Compile tests to dist-tests/ and run them |
 | `npm run check-packaging` | 📦 Windows launchers vs `build.productName` |
+| `npm run check-commits` | 📜 No commit body accidentally declares a breaking change |
 | `npm run build:ts` | 🔨 Compile TypeScript to dist/ |
 | `npm start` | 🚀 Run app (auto-compiles) |
 | `npm run start:diag` | 🔍 Run with diagnostics enabled |
 
-CI runs lint, typecheck, check-packaging, test and build, in that order.
+CI runs lint, commit-notes, typecheck, check-packaging, test and build, in that order.
 
 ## 🔄 Data Flow
 
@@ -99,6 +100,10 @@ variable.
 - ✅ CommonJS for Electron compatibility
 - ✅ Shared types in `src/shared/types/`
 - ✅ GSAP copied to `dist/renderer/vendor/`
+- ⚠️ **Never start a commit body line with the words "breaking change".** The changelog parser
+  reads it as a `BREAKING CHANGE` footer in any case, with or without a colon, so line wrapping
+  alone can force a major release and mangle the notes. Use the exact
+  `BREAKING CHANGE: <text>` marker when the change really is breaking.
 - ⚠️ **The renderer has no module bundler.** Every renderer file is loaded by its own `<script>`
   tag over a shared `var exports = {}` shim, and publishes itself on `window`
   (`if (typeof window !== 'undefined') { window.X = X; }`). Only `import type` is safe there — a

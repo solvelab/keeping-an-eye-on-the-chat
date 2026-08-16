@@ -30,7 +30,11 @@ jobs:
     name: Lint, typecheck & test
     runs-on: ubuntu-latest
     steps:
+      # Full history: the commit-message check needs to walk the range this
+      # push or pull request adds, not just the tip.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -43,6 +47,18 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      # A line beginning with "breaking change" is read by the changelog parser
+      # as a BREAKING CHANGE footer, in any case and with or without a colon.
+      # That once forced a major release with mangled notes (see #31).
+      - name: Commit message notes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="origin/${{ github.base_ref }}..HEAD"
+          else
+            RANGE="${{ github.event.before }}..${{ github.sha }}"
+          fi
+          node scripts/check-commit-notes.js "$RANGE"
 
       - name: Type check
         run: npm run typecheck
