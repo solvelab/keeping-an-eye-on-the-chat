@@ -42,7 +42,7 @@
 - 🎨 **Customizable Position** — Place the overlay in any corner with adjustable margins
 - 🖥️ **Multi-Monitor Support** — Choose which display shows the overlay
 - 🔧 **Easy Configuration** — Built-in wizard with presets, collapsible sections, and intuitive controls
-- 🖥️ **System Tray Integration** — Quick access to settings and sound mute toggle
+- 🖥️ **System Tray Integration** — Stop and restart the overlay, open settings, mute the sound
 - 🌍 **Multilingual** — English and Portuguese interface
 
 ## 📋 MVP Scope
@@ -130,9 +130,12 @@ After starting the overlay, the app remains accessible via the System Tray:
 </div>
 
 - **Right-click** — Opens menu with:
-  - **Mutar/Desmutar Som** — Toggle notification sound on/off
-  - **Abrir Configurações** — Opens configuration window
-  - **Sair** — Quit the application
+  - **Mute / Unmute Sound** — Toggle notification sound on/off
+  - **Stop / Start Overlay** — Takes the overlay off screen and stops watching chat, without
+    closing the app. Starting again reuses the settings already in use, so the wizard does not
+    reopen
+  - **Open Settings** — Opens configuration window
+  - **Quit** — Quit the application
 - **Double-click** — Opens configuration window directly
 
 > 💡 **Note:** The overlay window is transparent and doesn't appear in the taskbar, so the System Tray is your main way to interact with the app while it's running.

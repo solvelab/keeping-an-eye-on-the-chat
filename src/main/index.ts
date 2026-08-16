@@ -26,18 +26,24 @@ let currentLanguage: Language = 'en';
 const TRAY_TRANSLATIONS: Record<Language, {
   muteSound: string;
   unmuteSound: string;
+  stopOverlay: string;
+  startOverlay: string;
   openSettings: string;
   quit: string;
 }> = {
   en: {
     muteSound: 'Mute Sound',
     unmuteSound: 'Unmute Sound',
+    stopOverlay: 'Stop Overlay',
+    startOverlay: 'Start Overlay',
     openSettings: 'Open Settings',
     quit: 'Quit',
   },
   pt: {
     muteSound: 'Mutar Som',
     unmuteSound: 'Desmutar Som',
+    stopOverlay: 'Parar Overlay',
+    startOverlay: 'Iniciar Overlay',
     openSettings: 'Abrir Configurações',
     quit: 'Sair',
   },
@@ -64,6 +70,10 @@ const updateTrayMenu = (): void => {
       click: () => toggleMute(),
     },
     { type: 'separator' },
+    {
+      label: isOverlayRunning() ? t.stopOverlay : t.startOverlay,
+      click: () => (isOverlayRunning() ? stopOverlay() : startOverlay()),
+    },
     {
       label: t.openSettings,
       click: () => showConfigWindow(),
@@ -183,13 +193,8 @@ const startChatSources = (
  * If an overlay already exists, it is closed first to prevent duplicates.
  */
 const createOverlayWindow = (config: AppConfig): void => {
-  // Cleanup existing overlay before creating a new one
-  stopChatSources();
-
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.close();
-    mainWindow = null;
-  }
+  // One teardown path, shared with the tray's Stop Overlay.
+  stopOverlay();
 
   // Update current language from config and refresh tray menu
   currentLanguage = config.language || 'en';
@@ -289,6 +294,65 @@ const createOverlayWindow = (config: AppConfig): void => {
   if (!tray) {
     createTray();
   }
+
+  updateTrayMenu();
+};
+
+/**
+ * Whether the overlay is on screen right now.
+ *
+ * Derived from the window rather than tracked in a flag: a flag can drift out of
+ * step with reality, and the tray label is built from this on every rebuild.
+ */
+const isOverlayRunning = (): boolean => Boolean(mainWindow && !mainWindow.isDestroyed());
+
+/**
+ * Take the overlay off screen and stop watching chat.
+ *
+ * The app itself keeps running in the tray. This is the only teardown path —
+ * `createOverlayWindow` calls it before building a replacement — so there is no
+ * second place where a hidden chat window could be forgotten.
+ *
+ * Safe to call when nothing is running.
+ */
+const stopOverlay = (): void => {
+  stopChatSources();
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.close();
+  }
+  mainWindow = null;
+
+  updateTrayMenu();
+
+  if (diagnosticsEnabled) {
+    console.info('[tray] Overlay stopped');
+  }
+};
+
+/**
+ * Put the overlay back on screen with the configuration already in use.
+ *
+ * The wizard is not reopened: the streamer stopped the overlay, they did not ask
+ * to reconfigure it. If no configuration has been resolved yet — nothing has
+ * ever been started — the wizard is the only sensible answer.
+ */
+const startOverlay = (): void => {
+  if (isOverlayRunning()) {
+    return;
+  }
+
+  const tracked = getCurrentConfig();
+  if (!tracked) {
+    showConfigWindow();
+    return;
+  }
+
+  createOverlayWindow(tracked.values);
+
+  if (diagnosticsEnabled) {
+    console.info('[tray] Overlay started');
+  }
 };
 
 /**
@@ -316,8 +380,11 @@ const showConfigWindow = (): void => {
       }
     },
     onCancel: () => {
-      // User cancelled - quit the app if overlay isn't running
-      if (!mainWindow) {
+      // Cancelling the very first wizard means the app was never started, so it
+      // quits. Once the tray exists, cancelling is just closing a window — the
+      // overlay may be deliberately stopped, and quitting there would be a
+      // second, unasked-for action.
+      if (!tray) {
         if (diagnosticsEnabled) {
           console.info('[startup] Config cancelled, quitting');
         }
@@ -347,9 +414,20 @@ app.on('activate', () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
+  if (process.platform === 'darwin') {
+    return;
   }
+
+  // Without this guard, stopping the overlay would quit the app: closing the
+  // last window is exactly what the tray's Stop Overlay does. Once the tray
+  // exists the app lives there, and Quit is how it ends. Before the tray exists
+  // — the wizard was cancelled at startup — closing the last window still quits,
+  // so a cancelled launch does not leave a process behind.
+  if (tray) {
+    return;
+  }
+
+  app.quit();
 });
 
 app.on('before-quit', () => {
