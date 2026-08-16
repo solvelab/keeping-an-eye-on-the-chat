@@ -7,4 +7,4 @@
 - [x] 1.6 Build the configuration UI and wire it to the schema (sections, advanced toggle, preview, validation, test connection).
 - [x] 1.7 Implement start/cancel flow, dirty state prompts, and keyboard accessibility.
 - [x] 1.8 Add logs for config lifecycle actions and respect diagnostics mode.
-- [ ] 1.9 Add tests for merge precedence, validation, persistence, corrupted config, and startup gating.
+- [x] 1.9 Add tests for merge precedence, validation, persistence, corrupted config, and startup gating.

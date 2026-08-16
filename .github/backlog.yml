@@ -1,0 +1,20 @@
+version: 1
+project:
+  owner: solvelab
+  number: 5
+repo: solvelab/keeping-an-eye-on-the-chat
+fields:
+  status: Status
+  priority: Priority
+  size: Size
+defaults:
+  status: Backlog
+columns:
+  ready: Ready
+  in_progress: In progress
+  review: In review
+labels:
+  feature: enhancement
+  bug: bug
+  docs: documentation
+assignees: []

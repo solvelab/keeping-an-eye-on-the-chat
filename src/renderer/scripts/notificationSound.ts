@@ -169,5 +169,8 @@ export class NotificationSound {
   }
 }
 
-// Expose to window for use in HTML script
-(window as any).NotificationSound = NotificationSound;
+// Expose to window for use in HTML script. Guarded so the module can also be
+// required from a plain Node test runner.
+if (typeof window !== 'undefined') {
+  (window as any).NotificationSound = NotificationSound;
+}

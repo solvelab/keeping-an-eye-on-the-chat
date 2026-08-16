@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../dist-tests",
+    "rootDir": "..",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": [
+    "../tests/**/*",
+    "../src/config/**/*",
+    "../src/shared/**/*",
+    "../src/main/**/*",
+    "../src/renderer/scripts/**/*"
+  ]
+}
