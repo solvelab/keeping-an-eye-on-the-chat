@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.0.1...v2.1.0) (2026-08-16)
+
+
+### Features
+
+* **chat:** observe Kick chat alongside Twitch ([#43](https://github.com/solvelab/keeping-an-eye-on-the-chat/issues/43)) ([b0d4cb4](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/b0d4cb44a3904ca544e5b3d2815cba095f7d771b))
+
 ## [2.0.1](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.0.0...v2.0.1) (2026-08-16)
 
 
