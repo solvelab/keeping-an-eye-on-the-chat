@@ -38,7 +38,9 @@ cd keeping-an-eye-on-the-chat
 npm install
 
 # 4. Verify everything works
+npm run lint
 npm run typecheck
+npm test
 npm start
 ```
 
@@ -77,7 +79,7 @@ This is an Electron application with three process types:
 |-----------|---------|
 | `src/main/` | Electron main process (Node.js) |
 | `src/preload/` | IPC bridge scripts |
-| `src/renderer/overlay/` | Main overlay UI |
+| `src/renderer/` | Overlay UI (`index.html`, `scripts/`, `styles/`) |
 | `src/renderer/config/` | Configuration wizard |
 | `src/config/` | Configuration logic (schema, storage, merge) |
 | `src/shared/types/` | Shared TypeScript interfaces |
@@ -100,8 +102,30 @@ src/ (TypeScript) → build:ts → dist/ (JavaScript) → run
 |---------|-------------|
 | `npm start` | 🚀 Build & run app |
 | `npm run start:diag` | 🔍 Run with diagnostics |
+| `npm run lint` | 🧹 ESLint over `src/`, `tests/` and `scripts/` |
 | `npm run typecheck` | ✅ Type check only |
+| `npm test` | 🧪 Compile and run the unit suite |
+| `npm run check-packaging` | 📦 Windows launchers vs `build.productName` |
 | `npm run build:ts` | 🔨 Compile TypeScript |
+
+Run `npm run lint`, `npm run typecheck` and `npm test` before opening a pull request — CI runs all
+three.
+
+### Tests
+
+Unit tests live in `tests/`, use Node's built-in runner (`node:test`) and add **no dependency**.
+`npm test` compiles them to `dist-tests/` and runs them, so `dist/` stays exactly what
+electron-builder packages.
+
+```
+tests/
+├── config/       # merge precedence, schema validation, persistence
+├── main/         # connection-test decisions
+├── preload/      # the config handshake
+├── renderer/     # display controller, presets, notification sound
+├── shared/       # bounded dedup cache, display and hostname helpers
+└── helpers/      # temp dirs, Electron stub, overlay globals
+```
 
 ### Adding New Features
 
@@ -117,13 +141,21 @@ src/main/
 #### 🎨 Renderer Changes
 ```
 src/renderer/
-├── overlay/
-│   ├── scripts/       # ← UI logic here
-│   └── styles/        # ← CSS here
+├── index.html         # Overlay page (loads scripts via <script> tags)
+├── scripts/           # ← Overlay UI logic here
+├── styles/            # ← Overlay CSS here
+├── assets/            # Notification sounds
 └── config/
+    ├── index.html     # Wizard page
     ├── scripts/       # ← Config UI logic
-    └── styles/        # ← Config styles
+    ├── styles/        # ← Config styles
+    └── assets/        # Wizard logo
 ```
+
+> ⚠️ The renderer has **no module bundler**. Every file is loaded by its own `<script>` tag and
+> publishes itself on `window` (see `displayController.ts` or `configValues.ts`). A runtime
+> `import` of a value would emit a `require()` the browser cannot resolve — use `import type`
+> only, and add a `<script>` tag for anything new.
 
 #### 📝 Shared Types
 ```
