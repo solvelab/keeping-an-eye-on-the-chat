@@ -47,7 +47,7 @@ export class ConfigStore {
 
     try {
       const raw = fs.readFileSync(this.configPath, 'utf-8');
-      const stored: StoredConfig = JSON.parse(raw);
+      const stored = JSON.parse(raw) as StoredConfig;
 
       // Version check for future migrations
       if (stored.configVersion !== CONFIG_VERSION) {
@@ -81,7 +81,7 @@ export class ConfigStore {
 
     try {
       const raw = fs.readFileSync(this.backupPath, 'utf-8');
-      const stored: StoredConfig = JSON.parse(raw);
+      const stored = JSON.parse(raw) as StoredConfig;
       this.log('Restored config from backup');
 
       // Restore the backup as the main config

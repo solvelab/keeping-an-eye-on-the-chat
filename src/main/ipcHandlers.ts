@@ -6,7 +6,7 @@ import { ipcMain, dialog, BrowserWindow, shell, screen } from 'electron';
 import type { AppConfig, TrackedConfig, ValidationErrors } from '../config/types';
 import { ConfigStore } from '../config/store';
 import { mergeConfig, validateConfig, diffFromDefaults } from '../config/merge';
-import { getDefaults, PRESETS, applyPreset } from '../config/defaults';
+import { getDefaults, PRESETS } from '../config/defaults';
 import { CONFIG_SCHEMA, CONFIG_SECTIONS, SECTION_META } from '../config/schema';
 import { testTwitchConnection } from './testConnection';
 import { isTwitchUrl } from '../shared/hostnames';
@@ -45,7 +45,8 @@ function getSerializableSchema(): Record<string, unknown> {
 
   for (const [key, field] of Object.entries(CONFIG_SCHEMA)) {
     // Copy all properties except 'validate' function
-    const { validate, ...rest } = field;
+    // `validate` is a function and cannot cross the IPC boundary.
+    const { validate: _validate, ...rest } = field;
     serializable[key] = rest;
   }
 
@@ -158,7 +159,7 @@ export function setupConfigIPC(diagnostics = false): void {
   ipcMain.on('config:openExternal', (_event, url: string) => {
     // Only allow https URLs for security
     if (url && url.startsWith('https://')) {
-      shell.openExternal(url);
+      void shell.openExternal(url);
     }
   });
 
@@ -282,7 +283,9 @@ export function setupConfigIPC(diagnostics = false): void {
       </html>
     `;
 
-    displayIndicatorWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(indicatorHtml)}`);
+    void displayIndicatorWindow.loadURL(
+      `data:text/html;charset=utf-8,${encodeURIComponent(indicatorHtml)}`
+    );
 
     // Auto-close after 2.5 seconds
     displayIndicatorTimer = setTimeout(() => {
@@ -294,7 +297,7 @@ export function setupConfigIPC(diagnostics = false): void {
   });
 
   // Start the overlay (called when user clicks Start)
-  ipcMain.handle('config:start', async (_event, config: AppConfig) => {
+  ipcMain.handle('config:start', (_event, config: AppConfig) => {
     const errors = validateConfig(config);
     if (Object.keys(errors).length > 0) {
       return { success: false, errors };

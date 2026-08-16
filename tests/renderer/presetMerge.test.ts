@@ -27,7 +27,7 @@ function userConfig(): AppConfig {
 
 test('preset: the Twitch URL survives every shipped preset', () => {
   for (const preset of PRESETS) {
-    const merged = mergePresetConfig(userConfig(), preset.config as Partial<AppConfig>);
+    const merged = mergePresetConfig(userConfig(), preset.config);
 
     assert.equal(
       merged.twitchChatUrl,
@@ -41,7 +41,7 @@ test('preset: language and every unrelated setting survive', () => {
   const before = userConfig();
 
   for (const preset of PRESETS) {
-    const merged = mergePresetConfig(before, preset.config as Partial<AppConfig>);
+    const merged = mergePresetConfig(before, preset.config);
     const declared = new Set(Object.keys(preset.config));
 
     for (const key of Object.keys(before) as (keyof AppConfig)[]) {
@@ -57,7 +57,7 @@ test('preset: language and every unrelated setting survive', () => {
 
 test('preset: sets exactly the keys it declares', () => {
   const cozy = getPreset('cozy')!;
-  const merged = mergePresetConfig(userConfig(), cozy.config as Partial<AppConfig>);
+  const merged = mergePresetConfig(userConfig(), cozy.config);
 
   for (const [key, value] of Object.entries(cozy.config)) {
     assert.deepEqual(merged[key as keyof AppConfig], value, `preset value not applied for ${key}`);
@@ -70,15 +70,15 @@ test('preset: sets exactly the keys it declares', () => {
 
 test('preset: the empty "default" preset leaves the config untouched', () => {
   const before = userConfig();
-  const merged = mergePresetConfig(before, getPreset('default')!.config as Partial<AppConfig>);
+  const merged = mergePresetConfig(before, getPreset('default')!.config);
 
   assert.deepEqual(merged, before);
 });
 
 test('preset: switching presets is not cumulative on unrelated keys', () => {
   const before = userConfig();
-  const fast = mergePresetConfig(before, getPreset('fast-chat')!.config as Partial<AppConfig>);
-  const cozy = mergePresetConfig(fast, getPreset('cozy')!.config as Partial<AppConfig>);
+  const fast = mergePresetConfig(before, getPreset('fast-chat')!.config);
+  const cozy = mergePresetConfig(fast, getPreset('cozy')!.config);
 
   assert.equal(cozy.displaySeconds, 8);
   assert.equal(cozy.twitchChatUrl, before.twitchChatUrl);

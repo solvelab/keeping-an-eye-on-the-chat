@@ -17,13 +17,13 @@ test('coerce: an emptied number field becomes 0 so the validator reports it', ()
   const value = coerceFieldValue(CONFIG_SCHEMA.displaySeconds, '');
 
   assert.equal(value, 0);
-  assert.notEqual(CONFIG_SCHEMA.displaySeconds.validate!(value as never), null);
+  assert.notEqual(CONFIG_SCHEMA.displaySeconds.validate!(value), null);
 });
 
 test('coerce: a malformed number field becomes NaN so the validator reports it', () => {
   const value = coerceFieldValue(CONFIG_SCHEMA.displaySeconds, 'abc');
 
-  assert.ok(Number.isNaN(value as number));
+  assert.ok(Number.isNaN(value));
   assert.notEqual(CONFIG_SCHEMA.displaySeconds.validate!(value as never), null);
 });
 

@@ -84,8 +84,11 @@ interface DisplayIndicatorResult {
 
 /**
  * Configuration API exposed to the renderer.
+ *
+ * Documents the contract of the object handed to contextBridge below; the
+ * object is not annotated with it because contextBridge takes a plain record.
  */
-interface ConfigAPI {
+export interface ConfigAPI {
   /** Get the configuration schema and presets. */
   getSchema: () => Promise<SchemaData>;
   /** Load the merged configuration with source tracking. */
@@ -155,4 +158,4 @@ contextBridge.exposeInMainWorld('configAPI', {
 
   showDisplayIndicator: (displayId: number): Promise<DisplayIndicatorResult> =>
     ipcRenderer.invoke('config:showDisplayIndicator', displayId),
-} as ConfigAPI);
+});

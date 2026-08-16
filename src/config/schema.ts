@@ -61,7 +61,7 @@ export const CONFIG_SCHEMA: Record<keyof AppConfig, ConfigFieldMeta<AppConfig[ke
     description: 'UI language preference',
     type: 'select',
     default: 'en',
-    section: 'basic' as ConfigSection,
+    section: 'basic',
     options: [
       { value: 'en', label: 'English' },
       { value: 'pt', label: 'Português' },
@@ -75,7 +75,7 @@ export const CONFIG_SCHEMA: Record<keyof AppConfig, ConfigFieldMeta<AppConfig[ke
     description: 'Which monitor to show the overlay on',
     type: 'select',
     default: 0,
-    section: 'overlay' as ConfigSection,
+    section: 'overlay',
     options: [
       { value: 0, label: 'Primary Display' },
       // Additional options populated dynamically at runtime

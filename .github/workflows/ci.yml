@@ -13,13 +13,13 @@ permissions:
 
 jobs:
   lint:
-    name: Lint
+    name: Lint, typecheck & test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "18"
           cache: "npm"
@@ -27,8 +27,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Type check
         run: npm run typecheck
+
+      - name: Packaging consistency
+        run: npm run check-packaging
 
       - name: Unit tests
         run: npm test
@@ -44,13 +50,13 @@ jobs:
       new_release: ${{ steps.semantic.outputs.new_release_published }}
       version: ${{ steps.semantic.outputs.new_release_version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "18"
           cache: "npm"
@@ -60,7 +66,7 @@ jobs:
 
       - name: Semantic Release
         id: semantic
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@16ca923e6ccbb50770c415a0ccd43709a8c5f7a4 # v4.2.2
         with:
           extra_plugins: |
             @semantic-release/changelog
@@ -79,12 +85,12 @@ jobs:
       # workflow started, so the default checkout would build the pre-release
       # tree. Checking out the tag is what makes package.json carry the released
       # version, which is why no manual "npm version" step is needed here.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: v${{ needs.release.outputs.version }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "18"
           cache: "npm"
@@ -96,7 +102,7 @@ jobs:
         run: npm run build:ts && npx cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win zip nsis --publish never
 
       - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: v${{ needs.release.outputs.version }}
           files: |
@@ -115,12 +121,12 @@ jobs:
       # workflow started, so the default checkout would build the pre-release
       # tree. Checking out the tag is what makes package.json carry the released
       # version, which is why no manual "npm version" step is needed here.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: v${{ needs.release.outputs.version }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "18"
           cache: "npm"
@@ -132,7 +138,7 @@ jobs:
         run: npm run build:ts && npx electron-builder --linux AppImage --publish never
 
       - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: v${{ needs.release.outputs.version }}
           files: release/*.AppImage
