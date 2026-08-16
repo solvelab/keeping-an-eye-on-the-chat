@@ -145,3 +145,43 @@ test('store: creates the target directory when it does not exist yet', () => {
   assert.equal(store.save({ displaySeconds: 7 }).success, true);
   assert.deepEqual(store.load().config, { displaySeconds: 7 });
 });
+
+test('store: writes atomically and leaves no temp file behind', () => {
+  const dir = makeTempDir();
+  const store = new ConfigStore(false, dir);
+
+  store.save({ displaySeconds: 7 });
+
+  const leftovers = fs.readdirSync(dir).filter((name) => name.includes('.tmp'));
+  assert.deepEqual(leftovers, [], `temp files left behind: ${leftovers.join(', ')}`);
+  assert.deepEqual(fs.readdirSync(dir).sort(), [CONFIG_FILE]);
+});
+
+test('store: an interrupted write cannot leave a truncated config', () => {
+  const dir = makeTempDir();
+  const store = new ConfigStore(false, dir);
+
+  store.save({ displaySeconds: 7 });
+  const good = fs.readFileSync(path.join(dir, CONFIG_FILE), 'utf-8');
+
+  // Simulate a crash between opening the temp file and renaming it.
+  fs.writeFileSync(path.join(dir, `${CONFIG_FILE}.999999.tmp`), '{ "half', 'utf-8');
+
+  // The real config is untouched and still parses.
+  assert.equal(fs.readFileSync(path.join(dir, CONFIG_FILE), 'utf-8'), good);
+  assert.deepEqual(store.load().config, { displaySeconds: 7 });
+});
+
+test('store: a save failure surfaces as an error result, not an exception', () => {
+  const dir = makeTempDir();
+  // A directory where the config file should be makes the write fail.
+  fs.mkdirSync(path.join(dir, CONFIG_FILE));
+  const store = new ConfigStore(false, dir);
+
+  const result = store.save({ displaySeconds: 7 });
+
+  assert.equal(result.success, false);
+  assert.ok(result.error);
+  const leftovers = fs.readdirSync(dir).filter((name) => name.includes('.tmp'));
+  assert.deepEqual(leftovers, [], 'temp file should be cleaned up on failure');
+});

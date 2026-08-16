@@ -136,7 +136,7 @@ export class ConfigStore {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      fs.writeFileSync(this.configPath, JSON.stringify(stored, null, 2), 'utf-8');
+      this.writeFileAtomic(this.configPath, JSON.stringify(stored, null, 2));
       this.log('Config saved successfully');
 
       return { success: true, error: null };
@@ -144,6 +144,32 @@ export class ConfigStore {
       const message = err instanceof Error ? err.message : String(err);
       this.log('Failed to save config:', message);
       return { success: false, error: message };
+    }
+  }
+
+  /**
+   * Write a file so that it is never observed half-written.
+   *
+   * Writing straight to the destination leaves a truncated `config.json` if the
+   * process dies mid-write; the backup can recover from that, but a temp file
+   * plus a rename prevents it instead. `rename` is atomic within a filesystem,
+   * and the temp file sits in the same directory to guarantee that.
+   */
+  private writeFileAtomic(targetPath: string, contents: string): void {
+    const tempPath = `${targetPath}.${process.pid}.tmp`;
+
+    try {
+      fs.writeFileSync(tempPath, contents, 'utf-8');
+      fs.renameSync(tempPath, targetPath);
+    } catch (err) {
+      try {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+      } catch {
+        // Best-effort cleanup; the original error is what matters.
+      }
+      throw err;
     }
   }
 

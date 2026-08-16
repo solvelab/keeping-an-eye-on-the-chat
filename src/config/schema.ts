@@ -3,6 +3,7 @@
  * Single source of truth for validation, defaults, and UI metadata.
  */
 
+import { isTwitchUrl } from '../shared/hostnames';
 import type { AppConfig, ConfigFieldMeta, ConfigSection } from './types';
 
 /**
@@ -97,18 +98,20 @@ export const CONFIG_SCHEMA: Record<keyof AppConfig, ConfigFieldMeta<AppConfig[ke
       if (!str || !str.trim()) {
         return 'Twitch Chat URL is required';
       }
+      let url: URL;
       try {
-        const url = new URL(str);
-        if (!url.hostname.includes('twitch.tv')) {
-          return 'URL must be from twitch.tv';
-        }
-        if (!url.pathname.includes('/popout/') && !url.pathname.includes('/chat')) {
-          return 'URL should be a Twitch chat popout URL';
-        }
-        return null;
+        url = new URL(str);
       } catch {
         return 'Invalid URL format';
       }
+      // Suffix match, not substring: twitch.tv.attacker.example must not pass.
+      if (!isTwitchUrl(str)) {
+        return 'URL must be from twitch.tv';
+      }
+      if (!url.pathname.includes('/popout/') && !url.pathname.includes('/chat')) {
+        return 'URL should be a Twitch chat popout URL';
+      }
+      return null;
     },
   },
 

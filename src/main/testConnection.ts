@@ -4,7 +4,7 @@
  */
 
 import { BrowserWindow } from 'electron';
-import { ERR_ABORTED, isSuppressedUrl } from './hostnames';
+import { ERR_ABORTED, isSuppressedUrl, isTwitchUrl } from '../shared/hostnames';
 import type { ConnectionTestResult } from '../config/types';
 
 const TEST_TIMEOUT_MS = 10000;
@@ -83,12 +83,14 @@ export async function testTwitchConnection(
 
   // Validate URL format first
   try {
-    const parsed = new URL(url);
-    if (!parsed.hostname.includes('twitch.tv')) {
-      return { success: false, error: 'URL must be from twitch.tv', latencyMs: null };
-    }
+    new URL(url);
   } catch {
     return { success: false, error: 'Invalid URL format', latencyMs: null };
+  }
+
+  // Suffix match, not substring: twitch.tv.attacker.example must not pass.
+  if (!isTwitchUrl(url)) {
+    return { success: false, error: 'URL must be from twitch.tv', latencyMs: null };
   }
 
   return new Promise((resolve) => {
