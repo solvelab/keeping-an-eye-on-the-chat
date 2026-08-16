@@ -147,10 +147,18 @@ src/renderer/
 ├── assets/            # Notification sounds
 └── config/
     ├── index.html     # Wizard page
+    ├── locales/       # ← en.json / pt.json — edit wording here, not in TypeScript
     ├── scripts/       # ← Config UI logic
+    │   ├── configValues.ts  # value coercion and preset merging
+    │   ├── configForm.ts    # schema -> DOM
+    │   └── configApp.ts     # state, IPC and events
     ├── styles/        # ← Config styles
     └── assets/        # Wizard logo
 ```
+
+The wizard loads four scripts, in this order: `translations.js` (generated from `locales/*.json` by
+`copy-assets.js`), `configValues.js`, `configForm.js`, `configApp.js`. Order matters — each reads
+what the previous ones published on `window`.
 
 > ⚠️ The renderer has **no module bundler**. Every file is loaded by its own `<script>` tag and
 > publishes itself on `window` (see `displayController.ts` or `configValues.ts`). A runtime

@@ -113,6 +113,15 @@ export interface ConfigFieldMeta<T = unknown> {
 }
 
 /**
+ * A field's metadata as it survives the IPC boundary.
+ *
+ * `validate` is a function and cannot be structured-cloned, so the main process
+ * strips it before sending the schema to the renderer (`getSerializableSchema`).
+ * The renderer must not claim to have it.
+ */
+export type SerializableFieldMeta = Omit<ConfigFieldMeta<unknown>, 'validate'>;
+
+/**
  * Configuration with source tracking for each field.
  */
 export interface TrackedConfig {
