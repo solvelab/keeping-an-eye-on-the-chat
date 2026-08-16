@@ -6,7 +6,7 @@
  * so the stub is in the require cache by the time that code runs.
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
+ 
 const Module = require('module');
 
 type Listener = (event: unknown, ...args: unknown[]) => void;

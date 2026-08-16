@@ -433,10 +433,12 @@ export class TwitchChatSource {
       }
 
       delay = Math.min(delay * 2, this.attachBackoffMaxMs);
-      this.attachRetryTimer = setTimeout(attempt, delay);
+      this.attachRetryTimer = setTimeout(() => {
+        void attempt();
+      }, delay);
     };
 
-    attempt();
+    void attempt();
   }
 
   private async installObserver(): Promise<ObserverResult> {
@@ -445,9 +447,9 @@ export class TwitchChatSource {
     }
 
     try {
-      return await this.window.webContents.executeJavaScript(
+      return (await this.window.webContents.executeJavaScript(
         buildObserverScript(this.observerConfig)
-      );
+      )) as ObserverResult;
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Chat source executeJavaScript failed: ${err.message}`);
@@ -461,7 +463,7 @@ export class TwitchChatSource {
     }
 
     this.poller = setInterval(() => {
-      this.flushQueue();
+      void this.flushQueue();
     }, 250);
   }
 
@@ -475,9 +477,9 @@ export class TwitchChatSource {
     }
 
     try {
-      const items: RawChatItem[] = await this.window.webContents.executeJavaScript(
+      const items = (await this.window.webContents.executeJavaScript(
         'window.__twitchChatQueue ? window.__twitchChatQueue.splice(0) : []'
-      );
+      )) as RawChatItem[];
 
       if (!Array.isArray(items) || items.length === 0) {
         return;

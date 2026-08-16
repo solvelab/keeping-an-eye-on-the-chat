@@ -84,7 +84,7 @@ export class NotificationSound {
 
     // Set audio output device if specified
     if (this.deviceId) {
-      this.setAudioDevice(this.deviceId);
+      void this.setAudioDevice(this.deviceId);
     }
 
     // Pre-load the audio
@@ -118,7 +118,7 @@ export class NotificationSound {
         await audioElement.setSinkId(deviceId);
         this.log(`Audio output set to device: ${deviceId}`);
       } catch (err) {
-        this.log(`Failed to set audio device: ${err}`);
+        this.log(`Failed to set audio device: ${String(err)}`);
         console.error('setSinkId error:', err);
       }
     } else {
@@ -138,8 +138,8 @@ export class NotificationSound {
 
     // Reset to start if already playing
     this.audio.currentTime = 0;
-    this.audio.play().catch((err) => {
-      this.log(`Failed to play sound: ${err.message}`);
+    this.audio.play().catch((err: unknown) => {
+      this.log(`Failed to play sound: ${err instanceof Error ? err.message : String(err)}`);
     });
   }
 
@@ -188,5 +188,5 @@ export class NotificationSound {
 // Expose to window for use in HTML script. Guarded so the module can also be
 // required from a plain Node test runner.
 if (typeof window !== 'undefined') {
-  (window as any).NotificationSound = NotificationSound;
+  window.NotificationSound = NotificationSound;
 }

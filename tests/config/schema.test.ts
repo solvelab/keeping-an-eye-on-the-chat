@@ -14,7 +14,7 @@ import type { AppConfig } from '../../src/config/types';
 function check(key: keyof AppConfig, value: unknown): string | null {
   const field = CONFIG_SCHEMA[key];
   assert.ok(field.validate, `field ${key} has no validator`);
-  return field.validate!(value as never);
+  return field.validate(value as never);
 }
 
 /** Build a full config that only differs from defaults on the given key. */

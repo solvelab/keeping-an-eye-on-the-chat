@@ -63,7 +63,7 @@ export function createConfigWindow(options: ConfigWindowOptions): BrowserWindow 
 
   // Load the config window HTML
   const htmlPath = path.join(__dirname, '..', 'renderer', 'config', 'index.html');
-  configWindow.loadFile(htmlPath);
+  void configWindow.loadFile(htmlPath);
 
   if (devtools) {
     configWindow.webContents.openDevTools({ mode: 'detach' });

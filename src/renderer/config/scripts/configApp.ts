@@ -5,8 +5,6 @@
 
 /// <reference path="./global.d.ts" />
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 type Language = 'en' | 'pt';
 
 interface Translations {
@@ -383,7 +381,7 @@ class ConfigApp {
     this.clearSections();
     this.renderPresets();
     this.renderSections();
-    this.validateAndUpdate();
+    void this.validateAndUpdate();
   }
 
   /**
@@ -458,7 +456,7 @@ class ConfigApp {
 
       const fields = Object.values(this.schema).filter(
         (field: any) => field.section === section && field.key !== 'language'
-      ) as any[];
+      );
 
       for (const field of fields) {
         container.appendChild(this.createField(field));
@@ -604,8 +602,8 @@ class ConfigApp {
       select.id = `input-${meta.key}`;
       select.disabled = disabled;
 
-      // Load displays dynamically
-      this.loadDisplays(select, value);
+      // Load displays dynamically (fire and forget: the <select> fills in later)
+      void this.loadDisplays(select, value);
 
       // Show visual indicator when user changes selection
       select.addEventListener('change', () => {
@@ -655,8 +653,8 @@ class ConfigApp {
       defaultOption.selected = !value;
       select.appendChild(defaultOption);
 
-      // Load audio devices asynchronously
-      this.loadAudioDevices(select, value);
+      // Load audio devices asynchronously (the <select> fills in later)
+      void this.loadAudioDevices(select, value as string);
 
       return select;
     }
@@ -795,25 +793,27 @@ class ConfigApp {
       const target = e.target as HTMLElement;
       // Test connection button (delegated event)
       if (target.id === 'testConnectionBtn' || target.closest('#testConnectionBtn')) {
-        this.testConnection();
+        void this.testConnection();
       }
       // Test sound button (delegated event)
       if (target.id === 'testSoundBtn' || target.closest('#testSoundBtn')) {
-        this.testSound();
+        void this.testSound();
       }
       // Select audio file button (delegated event)
       if (target.id === 'selectAudioBtn' || target.closest('#selectAudioBtn')) {
-        this.selectAudioFile();
+        void this.selectAudioFile();
       }
     });
 
     // Preset selection
-    document.getElementById('presetSelect')?.addEventListener('change', async (e) => {
+    document.getElementById('presetSelect')?.addEventListener('change', (e) => {
       const select = e.target as HTMLSelectElement;
-      if (select.value) {
-        await this.applyPreset(select.value);
-        select.value = '';
+      if (!select.value) {
+        return;
       }
+      const presetId = select.value;
+      select.value = '';
+      void this.applyPreset(presetId);
     });
 
     // Logo click - open GitHub profile in default browser
@@ -846,8 +846,8 @@ class ConfigApp {
     });
 
     // Reset button
-    document.getElementById('resetBtn')?.addEventListener('click', async () => {
-      await this.resetToDefaults();
+    document.getElementById('resetBtn')?.addEventListener('click', () => {
+      void this.resetToDefaults();
     });
 
     // Cancel button
@@ -857,7 +857,7 @@ class ConfigApp {
 
     // Start button
     document.getElementById('startBtn')?.addEventListener('click', () => {
-      this.startOverlay();
+      void this.startOverlay();
     });
 
     // Keyboard shortcuts
@@ -867,7 +867,7 @@ class ConfigApp {
         e.preventDefault();
         const startBtn = document.getElementById('startBtn') as HTMLButtonElement;
         if (!startBtn.disabled) {
-          this.startOverlay();
+          void this.startOverlay();
         }
       }
       // Escape to cancel
@@ -895,7 +895,7 @@ class ConfigApp {
 
     let value: any;
     if (target.type === 'checkbox') {
-      value = (target as HTMLInputElement).checked;
+      value = (target).checked;
     } else {
       // Form controls always yield strings; the schema decides the real type.
       value = window.configValues.coerceFieldValue(meta, target.value);
@@ -909,7 +909,7 @@ class ConfigApp {
       this.updateSoundDependentFields(Boolean(value));
     }
 
-    this.validateAndUpdate();
+    void this.validateAndUpdate();
   }
 
   /**
@@ -1058,7 +1058,7 @@ class ConfigApp {
       } else {
         this.showAlert('error', `${this.t.msgConnectionFailed} ${result.error}`);
       }
-    } catch (err) {
+    } catch {
       this.showAlert('error', this.t.msgConnectionFailed);
     } finally {
       if (modal) modal.hidden = true;
@@ -1197,7 +1197,7 @@ class ConfigApp {
       }
 
       restoreStartButton();
-    } catch (err) {
+    } catch {
       this.showAlert('error', this.t.msgStartFailed);
       restoreStartButton();
     }
@@ -1207,7 +1207,7 @@ class ConfigApp {
    * Focus the first required field that's empty.
    */
   private focusFirstRequiredField(): void {
-    for (const [key, meta] of Object.entries(this.schema) as [string, any][]) {
+    for (const [key, meta] of Object.entries(this.schema)) {
       if (meta.required && !this.config[key]) {
         const input = document.getElementById(`input-${key}`);
         if (input) {

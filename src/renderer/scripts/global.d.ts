@@ -6,6 +6,7 @@ declare global {
     DisplayController: typeof import('./displayController').DisplayController;
     AvatarAnimator: typeof import('./avatarAnimator').AvatarAnimator;
     AvatarUI: typeof import('./avatarUI').AvatarUI;
+    NotificationSound: typeof import('./notificationSound').NotificationSound;
     boundedIdSet: {
       BoundedIdSet: typeof import('../../shared/boundedIdSet').BoundedIdSet;
       OVERLAY_SEEN_ID_LIMIT: number;

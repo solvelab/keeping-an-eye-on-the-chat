@@ -8,7 +8,7 @@ let hasCrossEnv = false;
 try {
   require.resolve('cross-env');
   hasCrossEnv = true;
-} catch (error) {
+} catch {
   hasCrossEnv = false;
 }
 

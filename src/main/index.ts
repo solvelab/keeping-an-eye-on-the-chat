@@ -203,7 +203,7 @@ const createOverlayWindow = (config: AppConfig): void => {
     });
   });
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'), {
+  void mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'), {
     query: { debug: debugOverlay ? '1' : '0' },
   });
 
@@ -285,7 +285,7 @@ const startApp = (): void => {
   showConfigWindow();
 };
 
-app.whenReady().then(startApp);
+void app.whenReady().then(startApp);
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
