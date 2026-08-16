@@ -64,7 +64,7 @@ The built-in wizard provides an intuitive way to configure all settings:
 | Section | Description |
 |---------|-------------|
 | 🔧 **Basic** | Twitch Chat URL and Kick Chat URL — at least one is required |
-| 🎨 **Overlay** | Display (monitor), position, margins, bubble width, attention pause |
+| 🎨 **Overlay** | Display (monitor), position, margins, bubble width, author's name style, attention pause |
 | 🔔 **Sound** | Enable/disable, output device, custom file, volume |
 | ⚡ **Performance** | Message length, ignored users, command prefix |
 | 🔬 **Advanced** | Queue size, exit animation, diagnostics, debug frame, devtools |
@@ -107,7 +107,23 @@ Hosts are matched by suffix, so a lookalike such as `kick.com.attacker.example` 
 | `OVERLAY_ANCHOR` | `bottom-left` | 📍 Corner the bubble appears in |
 | `OVERLAY_MARGIN` | `24` | 📏 Margin from the screen edge, px (0–200) |
 | `BUBBLE_MAX_WIDTH` | `420` | 📐 Maximum bubble width, px (120–800) |
+| `AUTHOR_STYLE` | `subtle` | 🏷️ How the chatter's name is set apart from their message |
 | `ATTENTION_PAUSE_MS` | `500` | 🎬 Pause before the avatar speaks, ms (0–3000). `0` disables it |
+
+#### Author's name
+
+Five designed treatments; the wizard offers the same list.
+
+| Value | How the name reads |
+|-------|--------------------|
+| `plain` | Same size and colour as the message, with a colon — how it read before this setting existed |
+| `tinted` | Same size, bold, in the platform's colour, colon kept |
+| `label` | A small uppercase label on its own line above the message |
+| `subtle` | Smaller and quieter than the message, no colon — **the default** |
+| `chip` | The name in a rounded chip, echoing the platform badge |
+
+In every treatment the name and the message are kept apart, and a long name wraps rather than
+widening the bubble or running under the platform badge.
 
 ### Overlay Position Options
 

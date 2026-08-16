@@ -116,6 +116,108 @@
 }
 
 /*
+ * Who said it.
+ *
+ * The author is its own element so the streamer can choose how it reads; the
+ * chosen treatment arrives as data-author-style on the bubble and every rule
+ * below hangs off it. Nothing branches in JavaScript.
+ *
+ * Two invariants hold in every treatment, and both are asserted by the overlay
+ * smoke test:
+ *   - the name and the message never touch;
+ *   - a 25-character name with no spaces wraps instead of widening the bubble,
+ *     and never runs under the platform badge in the top-right corner.
+ */
+.avatar-ui__author {
+  word-break: break-word;
+}
+
+.avatar-ui__author:empty {
+  display: none;
+}
+
+/* plain — as it read before the setting existed. */
+.avatar-ui__bubble[data-author-style='plain'] .avatar-ui__author {
+  margin-right: 0.3em;
+}
+
+/* tinted — same size, bold, carrying the platform's colour. */
+.avatar-ui__bubble[data-author-style='tinted'] .avatar-ui__author {
+  margin-right: 0.3em;
+  font-weight: 700;
+  color: rgba(0, 255, 255, 0.85);
+}
+
+.avatar-ui__bubble[data-author-style='tinted'][data-platform='twitch'] .avatar-ui__author {
+  color: rgb(196, 155, 255);
+}
+
+.avatar-ui__bubble[data-author-style='tinted'][data-platform='kick'] .avatar-ui__author {
+  color: rgb(150, 253, 116);
+}
+
+/*
+ * label — a small caps eyebrow on its own line.
+ *
+ * The right padding is not decoration: the platform badge sits at top: -9px;
+ * right: 10px, and without it a long name runs underneath.
+ */
+.avatar-ui__bubble[data-author-style='label'] .avatar-ui__author {
+  display: block;
+  margin-bottom: 3px;
+  padding-right: 62px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 255, 0.72);
+}
+
+.avatar-ui__bubble[data-author-style='label'][data-platform='twitch'] .avatar-ui__author {
+  color: rgba(190, 148, 255, 0.92);
+}
+
+.avatar-ui__bubble[data-author-style='label'][data-platform='kick'] .avatar-ui__author {
+  color: rgba(140, 250, 104, 0.92);
+}
+
+/* subtle — the default: smaller and quieter, so the message leads. */
+.avatar-ui__bubble[data-author-style='subtle'] .avatar-ui__author {
+  margin-right: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(190, 214, 224, 0.72);
+}
+
+/* chip — echoes the platform badge, so the bubble reads as two labelled parts. */
+.avatar-ui__bubble[data-author-style='chip'] .avatar-ui__author {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.14);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: rgba(190, 250, 255, 0.95);
+  text-shadow: none;
+}
+
+.avatar-ui__bubble[data-author-style='chip'][data-platform='twitch'] .avatar-ui__author {
+  border-color: rgba(145, 70, 255, 0.5);
+  background: rgba(145, 70, 255, 0.22);
+  color: rgba(226, 210, 255, 0.98);
+}
+
+.avatar-ui__bubble[data-author-style='chip'][data-platform='kick'] .avatar-ui__author {
+  border-color: rgba(83, 252, 24, 0.45);
+  background: rgba(83, 252, 24, 0.18);
+  color: rgba(214, 255, 198, 0.98);
+}
+
+/*
  * Where the message came from.
  *
  * Absolutely positioned so it can never shift the bubble text or the avatar

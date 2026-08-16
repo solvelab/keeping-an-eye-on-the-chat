@@ -2,7 +2,7 @@
  * Configuration types for the application.
  */
 
-import type { OverlayAnchor } from '../shared/types/config';
+import type { AuthorStyle, OverlayAnchor } from '../shared/types/config';
 
 /**
  * Source of where a configuration value came from.
@@ -36,6 +36,8 @@ export interface AppConfig {
   displaySeconds: number;
   /** Overlay position anchor. */
   overlayAnchor: OverlayAnchor;
+  /** How the author's name is set apart from the message. */
+  authorStyle: AuthorStyle;
   /** Margin in pixels from screen edge. */
   overlayMargin: number;
   /** Maximum width of chat bubble in pixels. */

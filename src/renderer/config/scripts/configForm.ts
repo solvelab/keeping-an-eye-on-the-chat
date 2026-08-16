@@ -20,6 +20,29 @@ type ConfigKey = keyof AppConfig;
 type Translations = Record<string, string>;
 
 /**
+ * Select options whose labels come from the locale instead of the schema.
+ *
+ * `src/config/schema.ts` stays the source of truth for which options exist; it
+ * just cannot hold their translations, since it is loaded by the main process
+ * and knows nothing about the chosen language.
+ */
+const TRANSLATED_OPTIONS: Record<string, Record<string, string>> = {
+  overlayAnchor: {
+    'bottom-left': 'anchorBottomLeft',
+    'bottom-right': 'anchorBottomRight',
+    'top-left': 'anchorTopLeft',
+    'top-right': 'anchorTopRight',
+  },
+  authorStyle: {
+    plain: 'authorStylePlain',
+    tinted: 'authorStyleTinted',
+    label: 'authorStyleLabel',
+    subtle: 'authorStyleSubtle',
+    chip: 'authorStyleChip',
+  },
+};
+
+/**
  * What the renderer needs from the controller.
  *
  * Passed rather than imported: the renderer reads the configuration the user is
@@ -186,14 +209,19 @@ export class ConfigFormRenderer {
    * Get translated anchor option label.
    */
   getAnchorLabel(value: string): string {
-    const map: Record<string, keyof Translations> = {
-      'bottom-left': 'anchorBottomLeft',
-      'bottom-right': 'anchorBottomRight',
-      'top-left': 'anchorTopLeft',
-      'top-right': 'anchorTopRight',
-    };
-    const key = map[value];
-    return key ? this.t[key] : value;
+    return this.getOptionLabel('overlayAnchor', value, value);
+  }
+
+  /**
+   * Get a translated label for a select option.
+   *
+   * The schema's own option labels are English, since the schema is not a
+   * translation file. Fields listed here take their labels from the locale
+   * instead; anything else falls back to what the schema declared.
+   */
+  getOptionLabel(fieldKey: string, value: string, fallback: string): string {
+    const key = TRANSLATED_OPTIONS[fieldKey]?.[value];
+    return key ? this.t[key] : fallback;
   }
 
   /**
@@ -251,12 +279,7 @@ export class ConfigFormRenderer {
         // A DOM option value is always a string; the schema type is what
         // decides how it is read back (see configValues.coerceFieldValue).
         option.value = String(opt.value);
-        // Translate anchor options
-        if (meta.key === 'overlayAnchor') {
-          option.textContent = this.getAnchorLabel(String(opt.value));
-        } else {
-          option.textContent = opt.label;
-        }
+        option.textContent = this.getOptionLabel(meta.key, String(opt.value), opt.label);
         option.selected = value === opt.value;
         select.appendChild(option);
       }

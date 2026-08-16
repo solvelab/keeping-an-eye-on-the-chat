@@ -4,6 +4,7 @@
  */
 
 import { isKickUrl, isTwitchUrl } from '../shared/hostnames';
+import { AUTHOR_STYLES } from '../shared/types';
 import type { AppConfig, ConfigFieldMeta, ConfigSection } from './types';
 
 /**
@@ -185,6 +186,29 @@ export const CONFIG_SCHEMA: Record<keyof AppConfig, ConfigFieldMeta<AppConfig[ke
       const allowed = ['bottom-left', 'bottom-right', 'top-left', 'top-right'];
       if (!allowed.includes(value as string)) {
         return 'Invalid overlay position';
+      }
+      return null;
+    },
+  },
+
+  authorStyle: {
+    key: 'authorStyle',
+    label: "Author's Name",
+    description: "How the chatter's name is set apart from their message",
+    type: 'select',
+    default: 'subtle',
+    envVar: 'AUTHOR_STYLE',
+    section: 'overlay',
+    options: [
+      { value: 'plain', label: 'Same as the message' },
+      { value: 'tinted', label: 'Bold, in the platform colour' },
+      { value: 'label', label: 'Small label above the message' },
+      { value: 'subtle', label: 'Smaller and quieter' },
+      { value: 'chip', label: 'Name in a chip' },
+    ],
+    validate: (value: unknown): string | null => {
+      if (!(AUTHOR_STYLES as readonly string[]).includes(value as string)) {
+        return "Invalid author's name style";
       }
       return null;
     },

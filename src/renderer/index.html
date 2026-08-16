@@ -135,6 +135,9 @@
           typeof config.overlayMargin === 'number' ? config.overlayMargin : 24;
         const bubbleMaxWidth =
           typeof config.bubbleMaxWidth === 'number' ? config.bubbleMaxWidth : 420;
+        // 'subtle' matches src/config/schema.ts -> authorStyle.default.
+        const authorStyle =
+          typeof config.authorStyle === 'string' ? config.authorStyle : 'subtle';
         const maxMessageLength =
           typeof config.maxMessageLength === 'number' ? config.maxMessageLength : 140;
         const ignoreCommandPrefix =
@@ -189,6 +192,7 @@
           anchor: overlayAnchor,
           margin: overlayMargin,
           bubbleMaxWidth,
+          authorStyle,
           diagnostics: diagnostics || debugEnabled
         });
 

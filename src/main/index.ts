@@ -256,6 +256,7 @@ const createOverlayWindow = (config: AppConfig): void => {
       overlayAnchor: config.overlayAnchor,
       overlayMargin: config.overlayMargin,
       bubbleMaxWidth: config.bubbleMaxWidth,
+      authorStyle: config.authorStyle,
       maxMessageLength: config.maxMessageLength,
       ignoreCommandPrefix: config.ignoreCommandPrefix,
       ignoreUsers: config.ignoreUsers,
