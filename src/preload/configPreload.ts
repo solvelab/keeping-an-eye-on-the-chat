@@ -45,10 +45,13 @@ interface StartResult {
 
 /**
  * Preset apply result.
+ *
+ * `config` holds only the keys the preset declares — the renderer merges them
+ * onto the configuration currently being edited.
  */
 interface PresetResult {
   success: boolean;
-  config?: AppConfig;
+  config?: Partial<AppConfig>;
   error?: string;
 }
 
