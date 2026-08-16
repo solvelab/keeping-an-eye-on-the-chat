@@ -115,7 +115,8 @@ The built-in wizard provides an easy way to configure the overlay:
 4. **Display Selection** — Choose which monitor to show the overlay (for multi-monitor setups)
 
 **UI Features:**
-- **Collapsible sections** — Click on section headers (Overlay, Sound, Performance, Advanced) to expand/collapse
+- **Live bubble preview** — The Overlay section shows the speech bubble as you configure it, including a **Long name** button for the case that breaks layouts
+- **Collapsible sections** — Click on section headers (Sound, Performance, Advanced) to expand/collapse. Basic and Overlay start open
 - **Logo link** — Click the logo to visit the developer's GitHub profile
 - **Dark theme** — Easy on the eyes with a modern interface
 

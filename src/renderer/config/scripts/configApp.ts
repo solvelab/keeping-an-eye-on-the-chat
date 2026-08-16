@@ -8,6 +8,7 @@
 // Type-only imports: they are erased at compile time, so no require() reaches
 // the browser. A value import here would fail at runtime and tsc would not say so.
 import type { AppConfig, ConfigPreset, ConfigSection, ConfigSource, SerializableFieldMeta, ValidationErrors } from '../../../config/types';
+import type { Platform } from '../../../shared/platforms';
 
 type Language = 'en' | 'pt';
 
@@ -70,6 +71,8 @@ class ConfigApp {
   private isFirstRun = false;
   private currentLang: Language = getInitialLanguage();
   private t: Translations = TRANSLATIONS[this.currentLang];
+  /** The live bubble in the overlay section, rebuilt with the form. */
+  private preview: import('./bubblePreview').BubblePreview | null = null;
 
   /**
    * Initialize the application.
@@ -287,6 +290,11 @@ class ConfigApp {
 
       for (const field of fields) {
         container.appendChild(renderer.createField(field));
+
+        // Directly below the setting it exists to explain.
+        if (field.key === 'authorStyle') {
+          container.appendChild(this.buildPreview());
+        }
       }
     }
   }
@@ -320,6 +328,42 @@ class ConfigApp {
    */
   private setConfigValue(key: ConfigKey, value: unknown): void {
     (this.config as unknown as Record<string, unknown>)[key] = value;
+    this.refreshPreview();
+  }
+
+  /**
+   * Build the bubble preview for the current render pass.
+   *
+   * The form is rebuilt from scratch whenever the language changes, so the
+   * previous preview's rotation timer is stopped before a new one starts.
+   */
+  private buildPreview(): HTMLElement {
+    this.preview?.destroy();
+    this.preview = new window.bubblePreview.BubblePreview(this.t);
+    this.refreshPreview();
+    return this.preview.element;
+  }
+
+  /** Feed the preview the values that change what the bubble looks like. */
+  private refreshPreview(): void {
+    if (!this.preview) {
+      return;
+    }
+
+    const configured: Platform[] = [];
+    if (typeof this.config.twitchChatUrl === 'string' && this.config.twitchChatUrl.trim()) {
+      configured.push('twitch');
+    }
+    if (typeof this.config.kickChatUrl === 'string' && this.config.kickChatUrl.trim()) {
+      configured.push('kick');
+    }
+
+    this.preview.update({
+      authorStyle: this.config.authorStyle,
+      bubbleMaxWidth:
+        typeof this.config.bubbleMaxWidth === 'number' ? this.config.bubbleMaxWidth : 420,
+      platforms: configured,
+    });
   }
 
   /**

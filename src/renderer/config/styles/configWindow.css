@@ -699,3 +699,85 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border);
 }
+
+/* ==========================================================================
+   Bubble preview
+   ==========================================================================
+   The bubble itself is styled by the overlay's own stylesheet, loaded into
+   this page by a second <link>. Everything here is either the frame around it
+   or the minimum needed to take the overlay's container out of fixed
+   positioning — the preview has to sit in the form, not float over the window.
+
+   Nothing below may restyle .avatar-ui__author, .avatar-ui__bubble or the
+   platform badge: the moment it does, the preview stops being a preview.
+   ========================================================================== */
+
+.bubble-preview {
+  margin: 4px 0 18px;
+  border: 1px solid var(--border, #2a3441);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bubble-preview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary, #1b222c);
+  border-bottom: 1px solid var(--border, #2a3441);
+}
+
+.bubble-preview__title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #8b9ea9);
+}
+
+.bubble-preview__toggle {
+  padding: 4px 10px;
+  border: 1px solid var(--border, #2a3441);
+  border-radius: 6px;
+  background: var(--bg-secondary, #232c38);
+  color: var(--text-primary, #e3edf2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.bubble-preview__toggle:hover {
+  border-color: var(--accent, #00b4d8);
+}
+
+.bubble-preview__toggle:focus-visible {
+  outline: 2px solid var(--accent, #00b4d8);
+  outline-offset: 1px;
+}
+
+/*
+ * A stand-in for the stream behind the overlay. The overlay is transparent and
+ * only ever sits on video, so previewing it on the wizard's flat panel would
+ * misrepresent every border and shadow in it.
+ */
+.bubble-preview__stage {
+  padding: 26px 18px 22px;
+  background:
+    radial-gradient(120% 90% at 18% 12%, rgba(52, 92, 118, 0.5), transparent 62%),
+    radial-gradient(90% 80% at 82% 88%, rgba(94, 44, 122, 0.42), transparent 60%),
+    #0a0e12;
+  overflow-x: auto;
+}
+
+/*
+ * The only override of the overlay's own rules: .avatar-ui is position: fixed
+ * and animates in from transparent. In here it is a still, in the flow.
+ */
+.bubble-preview .avatar-ui {
+  position: static;
+  opacity: 1;
+  transform: none;
+  transition: none;
+  min-width: min-content;
+}
