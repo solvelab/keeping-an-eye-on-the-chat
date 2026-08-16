@@ -198,27 +198,6 @@ export class ConfigStore {
   }
 
   /**
-   * Get the path to the config file.
-   */
-  getConfigPath(): string {
-    return this.configPath;
-  }
-
-  /**
-   * Get the path to the backup file.
-   */
-  getBackupPath(): string {
-    return this.backupPath;
-  }
-
-  /**
-   * Check if a saved config exists.
-   */
-  exists(): boolean {
-    return fs.existsSync(this.configPath);
-  }
-
-  /**
    * Log a message if diagnostics are enabled.
    */
   private log(...args: unknown[]): void {

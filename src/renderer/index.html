@@ -145,8 +145,9 @@
           typeof config.maxQueueLength === 'number' ? config.maxQueueLength : 50;
         const exitAnimationMs =
           typeof config.exitAnimationMs === 'number' ? config.exitAnimationMs : 400;
+        // 500 matches src/config/schema.ts -> attentionPauseMs.default.
         const attentionPauseMs =
-          typeof config.attentionPauseMs === 'number' ? config.attentionPauseMs : 1000;
+          typeof config.attentionPauseMs === 'number' ? config.attentionPauseMs : 500;
         const diagnostics = Boolean(config.diagnostics);
 
         // Notification sound settings (enabled by default)

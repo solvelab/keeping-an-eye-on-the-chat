@@ -434,39 +434,6 @@ export class AvatarAnimator {
     this.addVisemeStep(timeline, restPreset, duration);
   }
 
-  private addIdleTail(timeline: GSAPTimeline): void {
-    if (!timeline || !this.mouth) {
-      return;
-    }
-    const idleDuration = this.randomFloat(0.6, 0.8);
-    timeline.to(
-      this.mouth,
-      {
-        duration: idleDuration,
-        scaleY: 1.02,
-        scaleX: 1.01,
-        y: -0.15,
-        ease: 'sine.inOut',
-        repeat: -1,
-        yoyo: true
-      },
-      '>'
-    );
-    if (this.mouthInner) {
-      timeline.to(
-        this.mouthInner,
-        {
-          duration: idleDuration,
-          opacity: 0,
-          ease: 'sine.inOut',
-          repeat: -1,
-          yoyo: true
-        },
-        '<'
-      );
-    }
-  }
-
   private resolveVisemeShape(preset: VisemePreset): VisemeShape {
     const scaleY = this.clamp(
       this.randomFromRange(preset.scaleY),

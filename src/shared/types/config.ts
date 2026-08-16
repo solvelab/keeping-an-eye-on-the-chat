@@ -25,6 +25,8 @@ export interface OverlayConfig {
   maxQueueLength: number;
   /** Exit animation duration in milliseconds. */
   exitAnimationMs: number;
+  /** Pause before the avatar starts speaking, in milliseconds. 0 disables it. */
+  attentionPauseMs: number;
   /** Whether diagnostics logging is enabled. */
   diagnostics: boolean;
   /** Whether notification sound is enabled. */

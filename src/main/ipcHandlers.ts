@@ -9,7 +9,6 @@ import { mergeConfig, validateConfig, diffFromDefaults } from '../config/merge';
 import { getDefaults, PRESETS } from '../config/defaults';
 import { CONFIG_SCHEMA, CONFIG_SECTIONS, SECTION_META } from '../config/schema';
 import { testTwitchConnection } from './testConnection';
-import { isTwitchUrl } from '../shared/hostnames';
 
 let configStore: ConfigStore;
 let currentTrackedConfig: TrackedConfig | null = null;
@@ -329,41 +328,4 @@ export function setupConfigIPC(diagnostics = false): void {
  */
 export function getCurrentConfig(): TrackedConfig | null {
   return currentTrackedConfig;
-}
-
-/**
- * Set the current configuration (used after config window closes).
- */
-export function setCurrentConfig(config: AppConfig): void {
-  currentTrackedConfig = {
-    values: config,
-    sources: currentTrackedConfig?.sources || ({} as Record<keyof AppConfig, 'saved'>),
-  };
-}
-
-/**
- * Check if we can start without showing the config UI.
- * Returns true if TWITCH_CHAT_URL is provided via env/cli.
- */
-export function canStartWithoutUI(): boolean {
-  const { config: saved } = configStore.load();
-  const tracked = mergeConfig({ saved, diagnostics: diagnosticsEnabled });
-
-  // Can start if twitchChatUrl is present and valid
-  const url = tracked.values.twitchChatUrl;
-  if (!url || !url.trim()) {
-    return false;
-  }
-
-  return isTwitchUrl(url);
-}
-
-/**
- * Load and merge configuration for direct startup (no config window).
- */
-export function loadConfigForStartup(): TrackedConfig {
-  const { config: saved } = configStore.load();
-  const tracked = mergeConfig({ saved, diagnostics: diagnosticsEnabled });
-  currentTrackedConfig = tracked;
-  return tracked;
 }

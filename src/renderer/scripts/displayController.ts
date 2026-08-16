@@ -81,7 +81,8 @@ export class DisplayController {
       Number.isFinite(parsedExitMs) && parsedExitMs >= 0
         ? parsedExitMs
         : fallbackExitMs;
-    const fallbackAttentionPauseMs = 1000;
+    // Matches src/config/schema.ts -> attentionPauseMs.default.
+    const fallbackAttentionPauseMs = 500;
     const parsedAttentionPauseMs = Number(attentionPauseMs);
     const safeAttentionPauseMs =
       Number.isFinite(parsedAttentionPauseMs) && parsedAttentionPauseMs >= 0
@@ -354,34 +355,6 @@ export class DisplayController {
         resolve();
       }, durationMs);
     });
-  }
-
-  handleDisplayEnd(): void {
-    if (this.phase !== 'showing') {
-      return;
-    }
-
-    const endedId = this.activeMessage ? this.activeMessage.id : 'unknown';
-    this.logDiagnostics(`DISPLAY_END id=${endedId}`);
-    this.activeMessage = null;
-    this.displayTimer = null;
-    this.phase = 'exiting';
-    this.emitUpdate();
-
-    this.exitTimer = setTimeout(() => {
-      this.handleExitDone();
-    }, this.exitMs);
-  }
-
-  private handleExitDone(): void {
-    if (this.phase !== 'exiting') {
-      return;
-    }
-
-    this.exitTimer = null;
-    this.phase = 'idle';
-    this.logDiagnostics('EXIT_DONE');
-    this.startNextIfIdle();
   }
 
   private logDiagnostics(message: string): void {

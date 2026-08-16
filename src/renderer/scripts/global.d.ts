@@ -14,7 +14,9 @@ declare global {
     };
     overlayChat?: {
       onMessage: (handler: (message: ChatMessage) => void) => void;
+      onMuteChange: (handler: (muted: boolean) => void) => void;
       getConfig: () => OverlayConfig;
+      waitForConfig: (timeoutMs?: number) => Promise<OverlayConfig>;
     };
   }
 }

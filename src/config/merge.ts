@@ -143,41 +143,6 @@ export function validateConfig(config: AppConfig): ValidationErrors {
 }
 
 /**
- * Check if a configuration is complete (all required fields present and valid).
- */
-export function isConfigComplete(config: AppConfig): boolean {
-  const errors = validateConfig(config);
-  return Object.keys(errors).length === 0;
-}
-
-/**
- * Get the effective value of a field, applying validation.
- * Returns the value if valid, or the default if invalid.
- */
-export function getEffectiveValue<K extends keyof AppConfig>(
-  config: AppConfig,
-  key: K
-): AppConfig[K] {
-  const meta = CONFIG_SCHEMA[key];
-  const value = config[key];
-
-  // If value is empty and not required, return default
-  if ((value === undefined || value === null || value === '') && !meta.required) {
-    return meta.default as AppConfig[K];
-  }
-
-  // If validation passes, return value
-  if (meta.validate) {
-    const error = meta.validate(value);
-    if (error) {
-      return meta.default as AppConfig[K];
-    }
-  }
-
-  return value;
-}
-
-/**
  * Create a partial config containing only fields that differ from defaults.
  * Used when saving to disk to minimize stored data.
  */
