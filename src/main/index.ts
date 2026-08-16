@@ -178,6 +178,12 @@ const createOverlayWindow = (config: AppConfig): void => {
 
   // Send config to the overlay preload before loading HTML
   mainWindow.webContents.on('did-finish-load', () => {
+    // The mute state lives in the main process and survives overlay restarts,
+    // so a freshly created window has to be told about it. Without this, muting
+    // and then restarting the overlay from Settings brought the sound back
+    // while the tray menu still offered "Unmute".
+    mainWindow?.webContents.send('set-muted', isSoundMuted);
+
     mainWindow?.webContents.send('set-config', {
       displaySeconds: config.displaySeconds,
       overlayAnchor: config.overlayAnchor,

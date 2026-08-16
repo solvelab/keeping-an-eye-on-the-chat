@@ -37,6 +37,7 @@ export class NotificationSound {
   private enabled: boolean;
   private volume: number;
   private deviceId: string;
+  private soundFile: string;
   private audio: HTMLAudioElement | null = null;
   private diagnostics: boolean;
 
@@ -44,12 +45,12 @@ export class NotificationSound {
     this.enabled = options.enabled;
     this.volume = Math.max(0, Math.min(100, options.volume)) / 100;
     this.deviceId = options.deviceId || '';
+    // Remembered so sound enabled later (tray unmute) can still be loaded.
+    this.soundFile = options.soundFile || DEFAULT_SOUND_FILE;
     this.diagnostics = Boolean(options.diagnostics);
 
     if (this.enabled) {
-      // Use provided path or fall back to default
-      const soundPath = options.soundFile || DEFAULT_SOUND_FILE;
-      this.loadSound(soundPath);
+      this.loadSound(this.soundFile);
     }
   }
 
@@ -154,9 +155,24 @@ export class NotificationSound {
 
   /**
    * Enable or disable sound.
+   *
+   * Loads the audio on first enable: an overlay created with sound disabled has
+   * no audio element, and the tray's Unmute would otherwise be a no-op forever.
    */
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
+
+    if (enabled && !this.audio) {
+      // loadSound flips `enabled` back off if the file is unusable.
+      this.loadSound(this.soundFile);
+    }
+  }
+
+  /**
+   * Whether a sound is currently loaded and playable.
+   */
+  isReady(): boolean {
+    return this.enabled && this.audio !== null;
   }
 
   /**
