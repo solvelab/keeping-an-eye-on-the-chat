@@ -284,6 +284,18 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 | `test:` | Adding tests |
 | `chore:` | Maintenance tasks |
 
+### The gitmoji prefix is understood by the release tooling
+
+`.releaserc.json` configures a `headerPattern` that skips an optional non-word prefix, so
+`🐛 fix(config): …` is analysed as a `fix` and cuts a patch release.
+
+Without it, the preset's default pattern anchors the type at the start of the subject and every
+emoji-prefixed commit parses as untyped — which is what silently happened until it was fixed:
+`Analysis of 10 commits complete: no release`, with two `fix` commits sitting in that range.
+
+If you change `.releaserc.json`, keep `parserOpts` on **both** the analyzer and the notes generator.
+Configuring only the analyzer produces a release with empty notes. `npm test` fails if either loses it.
+
 ### Never begin a body line with "breaking change"
 
 The changelog parser reads a line starting with those words as a `BREAKING CHANGE` footer — **in any
