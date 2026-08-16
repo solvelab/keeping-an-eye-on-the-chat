@@ -119,7 +119,7 @@ variable.
 
 | Aspect | Detail |
 |--------|--------|
-| **Overlay Window** | Transparent, ignores mouse events |
+| **Overlay Window** | Transparent, ignores mouse events. Stopped and restarted from the tray; `window-all-closed` must not quit while the tray exists |
 | **Chat Source** | MutationObserver injected into a hidden BrowserWindow, one per platform; one failing does not stop the other |
 | **Deduplication** | Three layers: a WeakSet of DOM nodes, then a bounded id cache in each process |
 | **Queue** | Limited size, drops oldest when full |
