@@ -5,6 +5,7 @@ import {
   getHostname,
   hostnameMatches
 } from './hostnames';
+import { BoundedIdSet, CHAT_SOURCE_SEEN_ID_LIMIT } from '../shared/boundedIdSet';
 import type { ChatMessage, RawChatItem } from '../shared/types';
 
 const DEFAULT_CONTAINER_SELECTORS = [
@@ -286,7 +287,8 @@ export class TwitchChatSource {
   private readonly attachBackoffMs = 250;
   private readonly attachBackoffMaxMs = 2000;
   private localCounter = 0;
-  private readonly seenIds = new Set<string>();
+  // Bounded: a long stream would otherwise retain every id it ever saw.
+  private readonly seenIds = new BoundedIdSet(CHAT_SOURCE_SEEN_ID_LIMIT);
   private readonly observerConfig: ObserverConfig = OBSERVER_CONFIG;
 
   constructor({ url, onMessage, logger, diagnostics }: TwitchChatSourceOptions) {

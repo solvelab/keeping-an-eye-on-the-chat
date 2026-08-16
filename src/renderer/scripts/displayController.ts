@@ -45,7 +45,7 @@ export class DisplayController {
   private onUpdate: ((state: DisplayState) => void) | undefined;
   private onDisplay: DisplayCallbacks;
   private queue: ChatMessage[];
-  private seenIds: Set<string>;
+  private seenIds: InstanceType<typeof window.boundedIdSet.BoundedIdSet>;
   private activeMessage: ChatMessage | null;
   private phase: Phase;
   private sequenceToken: number;
@@ -118,7 +118,10 @@ export class DisplayController {
     this.onUpdate = onUpdate;
     this.onDisplay = onDisplay || {};
     this.queue = [];
-    this.seenIds = new Set();
+    // Bounded: the overlay used to retain every id of the whole stream.
+    this.seenIds = new window.boundedIdSet.BoundedIdSet(
+      window.boundedIdSet.OVERLAY_SEEN_ID_LIMIT
+    );
     this.activeMessage = null;
     this.phase = 'idle';
     this.sequenceToken = 0;

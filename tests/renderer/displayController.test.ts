@@ -5,6 +5,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+// Must come first: the controller reads window.boundedIdSet, which the overlay
+// provides through a <script> tag.
+import { OVERLAY_SEEN_ID_LIMIT } from '../helpers/overlayGlobals';
+
 import { DisplayController } from '../../src/renderer/scripts/displayController';
 import type { DisplayControllerOptions } from '../../src/renderer/scripts/displayController';
 import type { ChatMessage } from '../../src/shared/types';
@@ -213,4 +217,24 @@ test('sequence: attention pause is skipped when configured to zero', async () =>
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   assert.deepEqual(calls, []);
+});
+
+test('dedup: the seen-id cache is bounded and evicts the oldest entries', () => {
+  const controller = parkedController();
+
+  // One more than the retention window.
+  for (let i = 0; i <= OVERLAY_SEEN_ID_LIMIT; i += 1) {
+    controller.enqueue(message({ id: `id-${i}`, text: `m${i}` }));
+  }
+
+  const received = controller.getState().totalReceived;
+  assert.equal(received, OVERLAY_SEEN_ID_LIMIT + 1);
+
+  // The oldest id has been evicted, so it is accepted again...
+  controller.enqueue(message({ id: 'id-0', text: 'seen again' }));
+  assert.equal(controller.getState().totalReceived, received + 1);
+
+  // ...while a recent one is still deduplicated.
+  controller.enqueue(message({ id: `id-${OVERLAY_SEEN_ID_LIMIT}`, text: 'duplicate' }));
+  assert.equal(controller.getState().totalReceived, received + 1);
 });
