@@ -44,6 +44,7 @@ interface ConfigAPI {
 declare global {
   interface Window {
     configAPI: ConfigAPI;
+    configValues: typeof import('./configValues');
   }
 }
 

@@ -3,8 +3,14 @@
   "compilerOptions": {
     "outDir": "../dist-tests",
     "rootDir": "..",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["node"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node"
+    ],
     "declaration": false,
     "declarationMap": false
   },
@@ -13,6 +19,7 @@
     "../src/config/**/*",
     "../src/shared/**/*",
     "../src/main/**/*",
-    "../src/renderer/scripts/**/*"
+    "../src/renderer/scripts/**/*",
+    "../src/renderer/config/scripts/**/*"
   ]
 }

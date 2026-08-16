@@ -896,15 +896,9 @@ class ConfigApp {
     let value: any;
     if (target.type === 'checkbox') {
       value = (target as HTMLInputElement).checked;
-    } else if (meta.type === 'number') {
-      value = Number(target.value);
-    } else if (meta.type === 'string[]') {
-      value = target.value
-        .split(',')
-        .map((s: string) => s.trim().toLowerCase())
-        .filter(Boolean);
     } else {
-      value = target.value;
+      // Form controls always yield strings; the schema decides the real type.
+      value = window.configValues.coerceFieldValue(meta, target.value);
     }
 
     this.config[key] = value;
@@ -1213,9 +1207,14 @@ class ConfigApp {
   /**
    * Load available displays and populate the select element.
    */
-  private async loadDisplays(select: HTMLSelectElement, currentValue: number): Promise<void> {
+  private async loadDisplays(select: HTMLSelectElement, currentValue: unknown): Promise<void> {
     try {
       const displays = await window.configAPI.getDisplays();
+
+      // Configs written before displayId was coerced hold a numeric string.
+      const savedId = Number(currentValue);
+      const selectedId = Number.isFinite(savedId) ? savedId : 0;
+      const isKnown = displays.some((display) => display.id === selectedId);
 
       for (const display of displays) {
         const option = document.createElement('option');
@@ -1226,8 +1225,15 @@ class ConfigApp {
         } else {
           option.textContent = display.label;
         }
-        option.selected = display.id === currentValue || (currentValue === 0 && display.isPrimary);
+        option.selected = isKnown ? display.id === selectedId : display.isPrimary;
         select.appendChild(option);
+      }
+
+      // Keep the config in step with what the dropdown actually shows, so a
+      // disconnected monitor is not persisted back to disk.
+      const resolved = Number(select.value);
+      if (Number.isFinite(resolved)) {
+        this.config.displayId = resolved;
       }
 
       this.log(`Found ${displays.length} display(s)`);
