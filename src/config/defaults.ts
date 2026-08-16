@@ -20,15 +20,48 @@ export function getDefaults(): AppConfig {
 }
 
 /**
+ * The settings a preset is allowed to control.
+ *
+ * Presets describe a *timing profile* and nothing else. Everything outside this
+ * list — the Twitch URL above all, plus language, monitor, position and sound —
+ * belongs to the user and survives applying one.
+ */
+export const PRESET_KEYS = [
+  'displaySeconds',
+  'maxQueueLength',
+  'maxMessageLength',
+  'exitAnimationMs',
+  'attentionPauseMs',
+] as const satisfies readonly (keyof AppConfig)[];
+
+/**
+ * The schema's own values for the preset keys.
+ *
+ * Read from `CONFIG_SCHEMA` rather than written out again, so changing a
+ * default in one place cannot leave the "Default" preset behind.
+ */
+function schemaDefaultsForPresetKeys(): Partial<AppConfig> {
+  const values: Partial<AppConfig> = {};
+
+  for (const key of PRESET_KEYS) {
+    (values as Record<string, unknown>)[key] = CONFIG_SCHEMA[key].default;
+  }
+
+  return values;
+}
+
+/**
  * Built-in configuration presets.
- * These provide quick-start options for common use cases.
+ *
+ * All three declare exactly the same keys — stock, fast, cozy — so picking one
+ * is always a complete choice of timing profile rather than a partial nudge.
  */
 export const PRESETS: readonly ConfigPreset[] = [
   {
     id: 'default',
     name: 'Default',
-    description: 'Standard settings for most streams',
-    config: {},
+    description: 'Restores the standard timing, leaving your other settings alone',
+    config: schemaDefaultsForPresetKeys(),
   },
   {
     id: 'fast-chat',
@@ -54,7 +87,7 @@ export const PRESETS: readonly ConfigPreset[] = [
       attentionPauseMs: 1500,
     },
   },
-] as const;
+];
 
 /**
  * Get a preset by ID.
