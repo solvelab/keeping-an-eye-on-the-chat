@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.1.1...v2.2.0) (2026-08-16)
+
+
+### Features
+
+* **overlay:** let the streamer choose how the author's name is styled ([#48](https://github.com/solvelab/keeping-an-eye-on-the-chat/issues/48)) ([a8040de](https://github.com/solvelab/keeping-an-eye-on-the-chat/commit/a8040de3d2c722d8613377b521dd8007d23489ce))
+
 ## [2.1.1](https://github.com/solvelab/keeping-an-eye-on-the-chat/compare/v2.1.0...v2.1.1) (2026-08-16)
 
 
