@@ -13,7 +13,7 @@ import {
   hostnameMatches,
   isSuppressedUrl,
   isTwitchUrl,
-} from '../../src/main/hostnames';
+} from '../../src/shared/hostnames';
 
 test('getHostname: lowercases the host', () => {
   assert.equal(getHostname('https://WWW.Twitch.TV/popout/x/chat'), 'www.twitch.tv');
@@ -60,4 +60,17 @@ test('suffix lists contain no leading dots (the matcher adds them)', () => {
 
 test('ERR_ABORTED is Chromium net::ERR_ABORTED', () => {
   assert.equal(ERR_ABORTED, -3);
+});
+
+test('schema: the Twitch URL validator rejects lookalike hosts', async () => {
+  const { CONFIG_SCHEMA } = await import('../../src/config/schema');
+  const validate = CONFIG_SCHEMA.twitchChatUrl.validate!;
+
+  assert.equal(validate('https://www.twitch.tv/popout/x/chat?popout=' as never), null);
+  assert.equal(validate('https://twitch.tv/popout/x/chat' as never), null);
+
+  // Substring matching used to accept all of these.
+  assert.equal(validate('https://twitch.tv.attacker.example/popout/x/chat' as never), 'URL must be from twitch.tv');
+  assert.equal(validate('https://nottwitch.tv/popout/x/chat' as never), 'URL must be from twitch.tv');
+  assert.equal(validate('https://evil.io/?q=twitch.tv/popout/x/chat' as never), 'URL must be from twitch.tv');
 });

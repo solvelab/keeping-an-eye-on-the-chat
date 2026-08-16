@@ -2,6 +2,18 @@
 <html>
   <head>
     <meta charset="UTF-8" />
+    <!--
+      The overlay only ever loads files packaged with the app, plus a notification
+      sound the user may point anywhere on disk. `file:` is listed alongside
+      'self' because the page itself is loaded from a file:// URL, whose origin
+      Chromium treats as opaque. 'unsafe-inline' covers the <style> block and the
+      bootstrap <script> below; connect-src is 'none' because the overlay makes
+      no network requests of its own.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' file: 'unsafe-inline'; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data:; media-src 'self' file: data:; font-src 'self' file:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
     <title>Overlay Shell</title>
     <link rel="stylesheet" href="./styles/avatarUI.css" />
     <style>
@@ -256,7 +268,10 @@
 
         if (window.overlayChat && window.overlayChat.onMessage) {
           window.overlayChat.onMessage((message) => {
-            console.log('[chat-message]', message);
+            // Chat content only reaches the console when diagnostics are on.
+            if (diagnostics || debugEnabled) {
+              console.info('[chat-message]', message);
+            }
             controller.enqueue(message);
           });
         }

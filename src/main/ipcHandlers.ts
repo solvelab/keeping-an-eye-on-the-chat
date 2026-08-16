@@ -9,6 +9,7 @@ import { mergeConfig, validateConfig, diffFromDefaults } from '../config/merge';
 import { getDefaults, PRESETS, applyPreset } from '../config/defaults';
 import { CONFIG_SCHEMA, CONFIG_SECTIONS, SECTION_META } from '../config/schema';
 import { testTwitchConnection } from './testConnection';
+import { isTwitchUrl } from '../shared/hostnames';
 
 let configStore: ConfigStore;
 let currentTrackedConfig: TrackedConfig | null = null;
@@ -351,12 +352,7 @@ export function canStartWithoutUI(): boolean {
     return false;
   }
 
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname.includes('twitch.tv');
-  } catch {
-    return false;
-  }
+  return isTwitchUrl(url);
 }
 
 /**

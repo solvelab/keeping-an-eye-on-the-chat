@@ -4,7 +4,7 @@ import {
   TWITCH_DOMAIN_SUFFIXES,
   getHostname,
   hostnameMatches
-} from './hostnames';
+} from '../shared/hostnames';
 import { BoundedIdSet, CHAT_SOURCE_SEEN_ID_LIMIT } from '../shared/boundedIdSet';
 import type { ChatMessage, RawChatItem } from '../shared/types';
 
