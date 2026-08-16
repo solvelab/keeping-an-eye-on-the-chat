@@ -15,6 +15,8 @@ const DEFAULT_MAX_QUEUE_LENGTH = 50;
 const DEFAULT_OVERLAY_ANCHOR: OverlayAnchor = 'bottom-left';
 const DEFAULT_OVERLAY_MARGIN = 24;
 const DEFAULT_EXIT_ANIMATION_MS = 400;
+// Must match src/config/schema.ts -> attentionPauseMs.default
+const DEFAULT_ATTENTION_PAUSE_MS = 500;
 const DEFAULT_NOTIFICATION_SOUND_ENABLED = true;
 const DEFAULT_NOTIFICATION_SOUND_FILE = '';
 const DEFAULT_NOTIFICATION_SOUND_VOLUME = 50;
@@ -95,6 +97,11 @@ function parseEnvConfig(): OverlayConfig {
     ? Math.max(0, exitAnimationMsRaw)
     : DEFAULT_EXIT_ANIMATION_MS;
 
+  const attentionPauseMsRaw = Number.parseInt(process.env.ATTENTION_PAUSE_MS || '', 10);
+  const attentionPauseMs = Number.isFinite(attentionPauseMsRaw)
+    ? Math.max(0, attentionPauseMsRaw)
+    : DEFAULT_ATTENTION_PAUSE_MS;
+
   const diagnostics = process.env.DIAGNOSTICS === '1';
 
   // Default to true if not explicitly disabled (env var not set or not '0')
@@ -123,6 +130,7 @@ function parseEnvConfig(): OverlayConfig {
     ignoreUsers,
     maxQueueLength,
     exitAnimationMs,
+    attentionPauseMs,
     diagnostics,
     notificationSoundEnabled,
     notificationSoundFile,

@@ -107,16 +107,6 @@ export function createConfigWindow(options: ConfigWindowOptions): BrowserWindow 
 }
 
 /**
- * Close the configuration window if it exists.
- */
-export function closeConfigWindow(): void {
-  if (configWindow && !configWindow.isDestroyed()) {
-    configWindow.close();
-  }
-  configWindow = null;
-}
-
-/**
  * Check if the configuration window is currently open.
  */
 export function isConfigWindowOpen(): boolean {

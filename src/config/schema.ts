@@ -374,20 +374,3 @@ export const CONFIG_SCHEMA: Record<keyof AppConfig, ConfigFieldMeta<AppConfig[ke
     },
   },
 };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyConfigFieldMeta = ConfigFieldMeta<any>;
-
-/**
- * Get all fields for a specific section.
- */
-export function getFieldsBySection(section: ConfigSection): AnyConfigFieldMeta[] {
-  return Object.values(CONFIG_SCHEMA).filter((field) => field.section === section);
-}
-
-/**
- * Get a field by its key.
- */
-export function getField<K extends keyof AppConfig>(key: K): AnyConfigFieldMeta {
-  return CONFIG_SCHEMA[key];
-}

@@ -60,6 +60,42 @@ test('repeated timeouts do not accumulate waiters', async () => {
   assert.equal(__pendingConfigResolvers(), before);
 });
 
+test('the env fallback produces attentionPauseMs with the schema default', async () => {
+  // The type used to omit this field, and the preload never produced it, so the
+  // overlay silently fell back to 1000 ms instead of the schema's 500 ms.
+  const { CONFIG_SCHEMA } = await import('../../src/config/schema');
+  const config = await overlayChat().waitForConfig(10);
+
+  assert.equal(typeof config.attentionPauseMs, 'number');
+  assert.equal(config.attentionPauseMs, CONFIG_SCHEMA.attentionPauseMs.default);
+  assert.equal(config.attentionPauseMs, 500);
+});
+
+test('the env fallback covers every key OverlayConfig declares', async () => {
+  const config = await overlayChat().waitForConfig(10);
+  const expected: Array<keyof typeof config> = [
+    'displaySeconds',
+    'overlayAnchor',
+    'overlayMargin',
+    'bubbleMaxWidth',
+    'maxMessageLength',
+    'ignoreCommandPrefix',
+    'ignoreUsers',
+    'maxQueueLength',
+    'exitAnimationMs',
+    'attentionPauseMs',
+    'diagnostics',
+    'notificationSoundEnabled',
+    'notificationSoundFile',
+    'notificationSoundVolume',
+    'notificationSoundDevice',
+  ];
+
+  for (const key of expected) {
+    assert.ok(key in config, `env fallback is missing ${String(key)}`);
+  }
+});
+
 test('waitForConfig resolves with the config the main process sends', async () => {
   const pending = overlayChat().waitForConfig(1000);
 
