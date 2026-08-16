@@ -1169,25 +1169,37 @@ class ConfigApp {
     startBtn.disabled = true;
     if (startBtnText) startBtnText.textContent = this.t.btnStarting;
 
+    // Restore the button unless the overlay actually started. Previously this
+    // only happened when `errors` was present, so a `{ success: false }`
+    // without them left the wizard stuck on "Starting..." forever.
+    const restoreStartButton = (): void => {
+      startBtn.disabled = false;
+      if (startBtnText) startBtnText.textContent = this.t.btnStart;
+    };
+
     try {
       const result = await window.configAPI.start(this.config);
 
       if (result.success) {
         window.configAPI.notifyStarted();
-      } else if (result.errors) {
+        return;
+      }
+
+      if (result.errors) {
         this.errors = result.errors;
         for (const [key, error] of Object.entries(result.errors)) {
           const errorEl = document.getElementById(`error-${key}`);
           if (errorEl) errorEl.textContent = error;
         }
         this.showAlert('error', this.t.msgFixErrors);
-        startBtn.disabled = false;
-        if (startBtnText) startBtnText.textContent = this.t.btnStart;
+      } else {
+        this.showAlert('error', this.t.msgStartFailed);
       }
+
+      restoreStartButton();
     } catch (err) {
       this.showAlert('error', this.t.msgStartFailed);
-      startBtn.disabled = false;
-      if (startBtnText) startBtnText.textContent = this.t.btnStart;
+      restoreStartButton();
     }
   }
 

@@ -20,6 +20,7 @@
     "../src/shared/**/*",
     "../src/main/**/*",
     "../src/renderer/scripts/**/*",
-    "../src/renderer/config/scripts/**/*"
+    "../src/renderer/config/scripts/**/*",
+    "../src/preload/**/*"
   ]
 }
