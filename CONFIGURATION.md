@@ -212,39 +212,24 @@ setx TWITCH_CHAT_URL "https://www.twitch.tv/popout/YOURNAME/chat?popout="
 
 ## 🎯 Presets
 
-A preset changes **only the timing settings it declares**. Everything else you have already
-configured — the Twitch URL above all, plus language, monitor, position and sound — is left alone.
+A preset is a **timing profile**. All three declare the same five settings, and nothing else:
+`displaySeconds`, `maxQueueLength`, `maxMessageLength`, `exitAnimationMs` and `attentionPauseMs`.
 
-Values below come from `PRESETS` in `src/config/defaults.ts`.
+Everything else you have configured — the Twitch URL above all, plus language, monitor, position and
+sound — is left untouched. That is the difference from **Reset to Defaults** in the footer, which
+restores *everything*.
 
-### Default
+| Setting | Default | Fast-Paced Chat | Cozy Stream |
+|---------|---------|-----------------|-------------|
+| Display Duration | 5 s | 3 s | 8 s |
+| Max Queue Length | 50 | 100 | 20 |
+| Max Message Length | 140 | 100 | 200 |
+| Exit Animation | 400 ms | 250 ms | 500 ms |
+| Attention Pause | 500 ms | 500 ms | 1500 ms |
+| **Best for** | most streams | high-activity chat | relaxed streams |
 
-Declares nothing, so selecting it changes nothing. It is there as the "no preset" entry; use
-**Reset to Defaults** in the footer to actually restore every setting.
-
-### Fast-Paced Chat
-
-| Setting | Value |
-|---------|-------|
-| Display Duration | 3 seconds |
-| Max Queue Length | 100 messages |
-| Max Message Length | 100 characters |
-| Exit Animation | 250 ms |
-| Attention Pause | 500 ms |
-
-**Best for:** high-activity streams with rapid chat.
-
-### Cozy Stream
-
-| Setting | Value |
-|---------|-------|
-| Display Duration | 8 seconds |
-| Max Queue Length | 20 messages |
-| Max Message Length | 200 characters |
-| Exit Animation | 500 ms |
-| Attention Pause | 1500 ms |
-
-**Best for:** relaxed streams with slower chat.
+The **Default** column is read from `src/config/schema.ts` at runtime rather than written out in
+`defaults.ts`, so changing a schema default automatically changes what this preset restores.
 
 ---
 

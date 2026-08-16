@@ -193,15 +193,19 @@ via environment variables. They override values saved by the wizard.
 
 ### 🎯 Presets
 
-| Preset | Changes | Best For |
-|--------|---------|----------|
-| **Default** | nothing — the "no preset" entry | — |
-| **Fast-Paced** | 3s display, 100-message queue, 100-char messages, 250ms exit, 500ms pause | High-activity chat |
-| **Cozy** | 8s display, 20-message queue, 200-char messages, 500ms exit, 1500ms pause | Relaxed streams |
+A preset is a **timing profile**. All three set the same five settings, so picking one is always a
+complete choice:
 
-> 💡 A preset only touches the timing settings it declares. Your Twitch URL, language, monitor,
-> position and sound settings are never changed by it. Use **Reset to Defaults** to restore
-> everything.
+| Preset | Display | Queue | Max length | Exit | Attention pause | Best For |
+|--------|---------|-------|------------|------|-----------------|----------|
+| **Default** | 5s | 50 | 140 | 400ms | 500ms | Most streams |
+| **Fast-Paced** | 3s | 100 | 100 | 250ms | 500ms | High-activity chat |
+| **Cozy** | 8s | 20 | 200 | 500ms | 1500ms | Relaxed streams |
+
+> 💡 A preset **only** touches those five settings. Your Twitch URL, language, monitor, position and
+> sound settings are never changed by it — that is what makes **Default** useful: it puts the timing
+> back to stock without you retyping anything. To restore *everything*, use **Reset to Defaults** in
+> the footer instead.
 
 ## 🏗️ Project Structure
 
