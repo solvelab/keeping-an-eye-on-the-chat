@@ -43,7 +43,8 @@ src/
 │   ├── assets/            # Notification sounds
 │   └── 📁 config/         # Configuration wizard
 │       ├── index.html
-│       ├── scripts/       # configApp.ts, configValues.ts
+│       ├── locales/       # en.json, pt.json (wording lives here, not in TS)
+│       ├── scripts/       # configValues.ts, configForm.ts, configApp.ts
 │       └── styles/        # Dark theme CSS
 ├── 📁 config/             # Configuration logic
 │   ├── types.ts           # TypeScript interfaces

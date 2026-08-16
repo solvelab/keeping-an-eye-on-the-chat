@@ -5,224 +5,42 @@
 
 /// <reference path="./global.d.ts" />
 
+// Type-only imports: they are erased at compile time, so no require() reaches
+// the browser. A value import here would fail at runtime and tsc would not say so.
+import type { AppConfig, ConfigPreset, ConfigSection, ConfigSource, SerializableFieldMeta, ValidationErrors } from '../../../config/types';
+
 type Language = 'en' | 'pt';
 
-interface Translations {
-  appTitle: string;
-  appSubtitle: string;
-  sectionBasic: string;
-  sectionOverlay: string;
-  sectionSound: string;
-  sectionPerformance: string;
-  sectionAdvanced: string;
-  quickSetup: string;
-  selectPreset: string;
-  presetDefault: string;
-  presetDefaultDesc: string;
-  presetFastPaced: string;
-  presetFastPacedDesc: string;
-  presetCozy: string;
-  presetCozyDesc: string;
-  btnTest: string;
-  btnReset: string;
-  btnCancel: string;
-  btnStart: string;
-  btnStarting: string;
-  btnEnable: string;
-  msgWelcome: string;
-  msgPresetApplied: string;
-  msgResetDefaults: string;
-  msgResetConfirm: string;
-  msgDiscardChanges: string;
-  msgConnectionSuccess: string;
-  msgConnectionFailed: string;
-  msgEnterUrlFirst: string;
-  msgTestingConnection: string;
-  msgFixErrors: string;
-  msgApiNotAvailable: string;
-  msgLoadFailed: string;
-  msgStartFailed: string;
-  badgeEnvTooltip: string;
-  badgeCliTooltip: string;
-  [key: string]: string;
+/** A configuration field name. */
+type ConfigKey = keyof AppConfig;
+
+/**
+ * A language table. The keys come from src/renderer/config/locales/*.json, which
+ * scripts/copy-assets.js turns into a <script> tag — the wizard has no module
+ * loader and runs from a file:// URL, where Chromium blocks fetch and XHR, so a
+ * script tag is the only way to get data into the page.
+ *
+ * Kept as an index signature rather than a hand-written field list: the fields
+ * would be a second copy of the JSON, and a test already asserts that both
+ * locales carry every key the wizard asks for.
+ */
+type Translations = Record<string, string>;
+
+/** Every language the wizard ships, keyed by language code. */
+function loadTranslations(): Record<Language, Translations> {
+  const bundle = window.configTranslations;
+
+  if (!bundle || !bundle.en) {
+    throw new Error(
+      'Translations are missing. scripts/copy-assets.js generates ' +
+        'dist/renderer/config/scripts/translations.js from the locale JSON files.'
+    );
+  }
+
+  return bundle;
 }
 
-const TRANSLATIONS: Record<Language, Translations> = {
-  en: {
-    appTitle: 'Keeping an Eye on the Chat',
-    appSubtitle: 'Configure your chat overlay',
-    sectionBasic: 'Basic Settings',
-    sectionOverlay: 'Overlay Settings',
-    sectionSound: 'Sound',
-    sectionPerformance: 'Performance',
-    sectionAdvanced: 'Advanced Settings',
-    quickSetup: 'Quick Setup:',
-    selectPreset: '-- Select Preset --',
-    presetDefault: 'Default',
-    presetDefaultDesc: 'Restores the standard timing, leaving your other settings alone',
-    presetFastPaced: 'Fast-Paced Chat',
-    presetFastPacedDesc: 'For high-activity chat with faster message cycling',
-    presetCozy: 'Cozy Stream',
-    presetCozyDesc: 'Longer display time for slower, relaxed streams',
-    btnTest: 'Test',
-    btnTestSound: 'Test',
-    btnReset: 'Reset to Defaults',
-    btnCancel: 'Cancel',
-    btnStart: 'Start Overlay',
-    btnStarting: 'Starting...',
-    btnEnable: 'Enable',
-    msgWelcome: 'Welcome! Enter your Twitch chat URL to get started.',
-    msgPresetApplied: 'Preset applied. Click Start to begin.',
-    msgResetDefaults: 'Settings reset to defaults.',
-    msgResetConfirm: 'Reset all settings to defaults? This cannot be undone.',
-    msgDiscardChanges: 'Discard unsaved changes?',
-    msgConnectionSuccess: 'Connection successful!',
-    msgConnectionFailed: 'Connection failed:',
-    msgEnterUrlFirst: 'Enter a Twitch Chat URL first',
-    msgTestingConnection: 'Testing connection...',
-    msgFixErrors: 'Please fix the errors above',
-    msgApiNotAvailable: 'Configuration API not available. Please restart the app.',
-    msgLoadFailed: 'Failed to load configuration:',
-    msgStartFailed: 'Failed to start overlay',
-    badgeEnvTooltip: 'This value is set by environment variable',
-    badgeCliTooltip: 'This value is set by command line',
-    fieldTwitchChatUrl: 'Twitch Chat URL',
-    fieldTwitchChatUrlDesc: 'The popout chat URL from your Twitch channel (e.g., https://www.twitch.tv/popout/yourname/chat?popout=)',
-    fieldDisplaySeconds: 'Display Duration',
-    fieldDisplaySecondsDesc: 'How long each message is shown on screen (in seconds)',
-    fieldOverlayAnchor: 'Overlay Position',
-    fieldOverlayAnchorDesc: 'Where the chat bubble appears on screen',
-    fieldOverlayMargin: 'Screen Margin',
-    fieldOverlayMarginDesc: 'Distance from screen edge (in pixels)',
-    fieldBubbleMaxWidth: 'Bubble Max Width',
-    fieldBubbleMaxWidthDesc: 'Maximum width of the chat bubble (in pixels)',
-    fieldMaxMessageLength: 'Max Message Length',
-    fieldMaxMessageLengthDesc: 'Messages longer than this will be truncated with an ellipsis',
-    fieldIgnoreCommandPrefix: 'Ignore Command Prefix',
-    fieldIgnoreCommandPrefixDesc: 'Messages starting with this prefix are ignored (leave empty to disable)',
-    fieldIgnoreUsers: 'Ignored Users',
-    fieldIgnoreUsersDesc: 'Comma-separated list of usernames to ignore (e.g., "nightbot, streamelements")',
-    fieldMaxQueueLength: 'Max Queue Length',
-    fieldMaxQueueLengthDesc: 'Maximum number of messages waiting to be displayed. Oldest are dropped when full.',
-    fieldExitAnimationMs: 'Exit Animation Duration',
-    fieldExitAnimationMsDesc: 'Duration of the exit animation (in milliseconds). Set to 0 to disable.',
-    fieldAttentionPauseMs: 'Attention Pause',
-    fieldAttentionPauseMsDesc: 'Pause before avatar starts speaking, creating an "I arrived" effect (0 to disable)',
-    fieldDiagnostics: 'Enable Diagnostics',
-    fieldDiagnosticsDesc: 'Log detailed diagnostic information to the console',
-    fieldOverlayDebug: 'Overlay Debug Mode',
-    fieldOverlayDebugDesc: 'Show a visible frame around the overlay for positioning',
-    fieldDevtools: 'Open DevTools',
-    fieldDevtoolsDesc: 'Open developer tools on startup (for debugging)',
-    fieldNotificationSoundEnabled: 'Enable Notification Sound',
-    fieldNotificationSoundEnabledDesc: 'Play a sound when a new message appears',
-    fieldNotificationSoundFile: 'Notification Sound',
-    fieldNotificationSoundFileDesc: 'Select an audio file to play when a message appears',
-    btnSelectAudio: 'Browse...',
-    noFileSelected: '(Default: ./assets/sounds/notification.wav)',
-    fieldNotificationSoundVolume: 'Sound Volume',
-    fieldNotificationSoundVolumeDesc: 'Volume level for the notification sound (0-100%)',
-    fieldNotificationSoundDevice: 'Audio Output Device',
-    fieldNotificationSoundDeviceDesc: 'Select which audio device to play the notification sound',
-    audioDeviceDefault: 'System Default',
-    audioDeviceLoading: 'Loading devices...',
-    audioDeviceError: 'Could not load audio devices',
-    anchorBottomLeft: 'Bottom Left',
-    anchorBottomRight: 'Bottom Right',
-    anchorTopLeft: 'Top Left',
-    anchorTopRight: 'Top Right',
-    fieldDisplayId: 'Display',
-    fieldDisplayIdDesc: 'Which monitor to show the overlay on',
-    displayPrimary: 'Primary',
-  },
-  pt: {
-    appTitle: 'De Olho no Chat',
-    appSubtitle: 'Configure seu overlay de chat',
-    sectionBasic: 'Configurações Básicas',
-    sectionOverlay: 'Configurações do Overlay',
-    sectionSound: 'Som',
-    sectionPerformance: 'Performance',
-    sectionAdvanced: 'Configurações Avançadas',
-    quickSetup: 'Configuração Rápida:',
-    selectPreset: '-- Selecionar Preset --',
-    presetDefault: 'Padrão',
-    presetDefaultDesc: 'Restaura os tempos padrão, sem mexer nas outras configurações',
-    presetFastPaced: 'Chat Agitado',
-    presetFastPacedDesc: 'Para chat de alta atividade com troca mais rápida de mensagens',
-    presetCozy: 'Stream Tranquila',
-    presetCozyDesc: 'Tempo de exibição mais longo para streams mais relaxadas',
-    btnTest: 'Testar',
-    btnTestSound: 'Testar',
-    btnReset: 'Restaurar Padrões',
-    btnCancel: 'Cancelar',
-    btnStart: 'Iniciar Overlay',
-    btnStarting: 'Iniciando...',
-    btnEnable: 'Ativar',
-    msgWelcome: 'Bem-vindo! Digite a URL do chat da Twitch para começar.',
-    msgPresetApplied: 'Preset aplicado. Clique em Iniciar para começar.',
-    msgResetDefaults: 'Configurações restauradas para os padrões.',
-    msgResetConfirm: 'Restaurar todas as configurações para os padrões? Isso não pode ser desfeito.',
-    msgDiscardChanges: 'Descartar alterações não salvas?',
-    msgConnectionSuccess: 'Conexão bem-sucedida!',
-    msgConnectionFailed: 'Falha na conexão:',
-    msgEnterUrlFirst: 'Digite uma URL de Chat da Twitch primeiro',
-    msgTestingConnection: 'Testando conexão...',
-    msgFixErrors: 'Por favor, corrija os erros acima',
-    msgApiNotAvailable: 'API de configuração não disponível. Por favor, reinicie o aplicativo.',
-    msgLoadFailed: 'Falha ao carregar configuração:',
-    msgStartFailed: 'Falha ao iniciar overlay',
-    badgeEnvTooltip: 'Este valor é definido por variável de ambiente',
-    badgeCliTooltip: 'Este valor é definido por linha de comando',
-    fieldTwitchChatUrl: 'URL do Chat da Twitch',
-    fieldTwitchChatUrlDesc: 'A URL do chat popout do seu canal Twitch (ex: https://www.twitch.tv/popout/seunome/chat?popout=)',
-    fieldDisplaySeconds: 'Duração de Exibição',
-    fieldDisplaySecondsDesc: 'Por quanto tempo cada mensagem é mostrada na tela (em segundos)',
-    fieldOverlayAnchor: 'Posição do Overlay',
-    fieldOverlayAnchorDesc: 'Onde o balão de chat aparece na tela',
-    fieldOverlayMargin: 'Margem da Tela',
-    fieldOverlayMarginDesc: 'Distância da borda da tela (em pixels)',
-    fieldBubbleMaxWidth: 'Largura Máx. do Balão',
-    fieldBubbleMaxWidthDesc: 'Largura máxima do balão de chat (em pixels)',
-    fieldMaxMessageLength: 'Tamanho Máx. da Mensagem',
-    fieldMaxMessageLengthDesc: 'Mensagens maiores que isso serão truncadas com reticências',
-    fieldIgnoreCommandPrefix: 'Prefixo de Comando a Ignorar',
-    fieldIgnoreCommandPrefixDesc: 'Mensagens começando com este prefixo são ignoradas (deixe vazio para desativar)',
-    fieldIgnoreUsers: 'Usuários Ignorados',
-    fieldIgnoreUsersDesc: 'Lista de usuários a ignorar separados por vírgula (ex: "nightbot, streamelements")',
-    fieldMaxQueueLength: 'Tamanho Máx. da Fila',
-    fieldMaxQueueLengthDesc: 'Número máximo de mensagens aguardando para serem exibidas. As mais antigas são descartadas quando cheia.',
-    fieldExitAnimationMs: 'Duração da Animação de Saída',
-    fieldExitAnimationMsDesc: 'Duração da animação de saída (em milissegundos). Defina como 0 para desativar.',
-    fieldAttentionPauseMs: 'Pausa de Atenção',
-    fieldAttentionPauseMsDesc: 'Pausa antes do avatar começar a falar, criando um efeito de "cheguei" (0 para desativar)',
-    fieldDiagnostics: 'Ativar Diagnósticos',
-    fieldDiagnosticsDesc: 'Registrar informações detalhadas de diagnóstico no console',
-    fieldOverlayDebug: 'Modo Debug do Overlay',
-    fieldOverlayDebugDesc: 'Mostrar uma moldura visível ao redor do overlay para posicionamento',
-    fieldDevtools: 'Abrir DevTools',
-    fieldDevtoolsDesc: 'Abrir ferramentas de desenvolvedor ao iniciar (para depuração)',
-    fieldNotificationSoundEnabled: 'Ativar Som de Notificação',
-    fieldNotificationSoundEnabledDesc: 'Tocar um som quando uma nova mensagem aparecer',
-    fieldNotificationSoundFile: 'Som de Notificação',
-    fieldNotificationSoundFileDesc: 'Selecione um arquivo de áudio para tocar quando uma mensagem aparecer',
-    btnSelectAudio: 'Procurar...',
-    noFileSelected: '(Padrão: ./assets/sounds/notification.wav)',
-    fieldNotificationSoundVolume: 'Volume do Som',
-    fieldNotificationSoundVolumeDesc: 'Nível de volume do som de notificação (0-100%)',
-    fieldNotificationSoundDevice: 'Dispositivo de Saída de Áudio',
-    fieldNotificationSoundDeviceDesc: 'Selecione qual dispositivo de áudio tocará o som de notificação',
-    audioDeviceDefault: 'Padrão do Sistema',
-    audioDeviceLoading: 'Carregando dispositivos...',
-    audioDeviceError: 'Não foi possível carregar os dispositivos de áudio',
-    anchorBottomLeft: 'Inferior Esquerdo',
-    anchorBottomRight: 'Inferior Direito',
-    anchorTopLeft: 'Superior Esquerdo',
-    anchorTopRight: 'Superior Direito',
-    fieldDisplayId: 'Tela',
-    fieldDisplayIdDesc: 'Em qual monitor exibir o overlay',
-    displayPrimary: 'Principal',
-  },
-};
+const TRANSLATIONS: Record<Language, Translations> = loadTranslations();
 
 /**
  * Get the initial language preference from browser settings.
@@ -240,14 +58,14 @@ function getInitialLanguage(): Language {
  * Main configuration application class.
  */
 class ConfigApp {
-  private schema: Record<string, any> = {};
-  private sections: readonly string[] = [];
-  private sectionMeta: Record<string, { title: string; description: string }> = {};
-  private presets: any[] = [];
-  private config: Record<string, any> = {};
-  private sources: Record<string, string> = {};
-  private originalConfig: Record<string, any> = {};
-  private errors: Record<string, string> = {};
+  private schema: Partial<Record<keyof AppConfig, SerializableFieldMeta>> = {};
+  private sections: readonly ConfigSection[] = [];
+  private sectionMeta: Partial<Record<ConfigSection, { title: string; description: string }>> = {};
+  private presets: ConfigPreset[] = [];
+  private config: AppConfig = {} as AppConfig;
+  private sources: Partial<Record<keyof AppConfig, ConfigSource>> = {};
+  private originalConfig: AppConfig = {} as AppConfig;
+  private errors: ValidationErrors = {};
   private isDirty = false;
   private isFirstRun = false;
   private currentLang: Language = getInitialLanguage();
@@ -287,7 +105,7 @@ class ConfigApp {
 
       // Apply language from loaded config (if different from initial detection)
       if (this.config.language && this.config.language !== this.currentLang) {
-        this.currentLang = this.config.language as Language;
+        this.currentLang = this.config.language;
         this.t = TRANSLATIONS[this.currentLang];
         this.applyStaticTranslations();
         this.updateLanguageToggle();
@@ -454,312 +272,54 @@ class ConfigApp {
       const container = document.getElementById(`section-${section}`);
       if (!container) continue;
 
-      const fields = Object.values(this.schema).filter(
-        (field: any) => field.section === section && field.key !== 'language'
-      );
+      const fields = this.schemaFields()
+        .map(([, field]) => field)
+        .filter((field) => field.section === section && field.key !== 'language');
+
+      // A fresh renderer per pass, so switching language picks up the new table.
+      const renderer = new window.configForm.ConfigFormRenderer({
+        t: this.t,
+        config: this.config,
+        sources: this.sources,
+        setConfigValue: (key, value) => this.setConfigValue(key, value),
+        log: (message) => this.log(message),
+      });
 
       for (const field of fields) {
-        container.appendChild(this.createField(field));
+        container.appendChild(renderer.createField(field));
       }
     }
-  }
-
-  /**
-   * Get translated field label.
-   */
-  private getFieldLabel(key: string): string {
-    const labelKey = `field${this.capitalize(key)}` as keyof Translations;
-    return this.t[labelKey] || key;
-  }
-
-  /**
-   * Get translated field description.
-   */
-  private getFieldDesc(key: string): string {
-    const descKey = `field${this.capitalize(key)}Desc` as keyof Translations;
-    return this.t[descKey] || '';
-  }
-
-  /**
-   * Capitalize first letter.
-   */
-  private capitalize(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
   /**
    * Fields that depend on notificationSoundEnabled being true.
    */
-  private readonly soundDependentFields = [
-    'notificationSoundDevice',
-    'notificationSoundFile',
-    'notificationSoundVolume',
-  ];
-
   /**
-   * Create a form field element.
+   * Narrow a DOM-derived string to a configuration key.
+   *
+   * Element ids carry field names as plain strings. This is the one place that
+   * turns such a string back into a key the schema actually declares, so an id
+   * that does not correspond to a field is rejected instead of writing a
+   * phantom entry into the config.
    */
-  private createField(meta: any): HTMLElement {
-    const fieldDiv = document.createElement('div');
-    fieldDiv.className = 'form-field';
-    fieldDiv.dataset.key = meta.key;
+  private toConfigKey(key: string): ConfigKey | null {
+    return Object.prototype.hasOwnProperty.call(this.schema, key) ? (key as ConfigKey) : null;
+  }
 
-    const source = this.sources[meta.key];
-    const isOverridden = source === 'env' || source === 'cli';
-
-    // Check if this field should be disabled because sound is disabled
-    const isSoundDependent = this.soundDependentFields.includes(meta.key);
-    const soundEnabled = Boolean(this.config.notificationSoundEnabled);
-    const shouldDisable = isOverridden || (isSoundDependent && !soundEnabled);
-
-    // Label
-    const labelDiv = document.createElement('div');
-    labelDiv.className = 'form-label';
-
-    const labelText = document.createElement('span');
-    labelText.textContent = this.getFieldLabel(meta.key);
-    if (meta.required) {
-      const req = document.createElement('span');
-      req.className = 'required';
-      req.textContent = ' *';
-      labelText.appendChild(req);
-    }
-    labelDiv.appendChild(labelText);
-
-    // Override badge
-    if (isOverridden) {
-      const badge = document.createElement('span');
-      badge.className = `override-badge override-badge--${source}`;
-      badge.textContent = source.toUpperCase();
-      badge.title = source === 'env' ? this.t.badgeEnvTooltip : this.t.badgeCliTooltip;
-      labelDiv.appendChild(badge);
-    }
-
-    fieldDiv.appendChild(labelDiv);
-
-    // Description
-    const description = this.getFieldDesc(meta.key);
-    if (description) {
-      const desc = document.createElement('p');
-      desc.className = 'form-description';
-      desc.textContent = description;
-      fieldDiv.appendChild(desc);
-    }
-
-    // Input element
-    const inputContainer = this.createInput(meta, shouldDisable);
-    fieldDiv.appendChild(inputContainer);
-
-    // Error container
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'form-error';
-    errorDiv.id = `error-${meta.key}`;
-    fieldDiv.appendChild(errorDiv);
-
-    return fieldDiv;
+  /** The schema as typed key/metadata pairs. */
+  private schemaFields(): [ConfigKey, SerializableFieldMeta][] {
+    return Object.entries(this.schema) as [ConfigKey, SerializableFieldMeta][];
   }
 
   /**
-   * Get translated anchor option label.
+   * Write a coerced form value into the configuration.
+   *
+   * The cast is confined here: the value has just been coerced to the type the
+   * schema declares for this key, which TypeScript cannot follow through the
+   * DOM round trip.
    */
-  private getAnchorLabel(value: string): string {
-    const map: Record<string, keyof Translations> = {
-      'bottom-left': 'anchorBottomLeft',
-      'bottom-right': 'anchorBottomRight',
-      'top-left': 'anchorTopLeft',
-      'top-right': 'anchorTopRight',
-    };
-    const key = map[value];
-    return key ? this.t[key] : value;
-  }
-
-  /**
-   * Create the appropriate input element for a field.
-   */
-  private createInput(meta: any, disabled: boolean): HTMLElement {
-    const value = this.config[meta.key];
-
-    // Boolean checkbox
-    if (meta.type === 'boolean') {
-      const label = document.createElement('label');
-      label.className = 'form-checkbox';
-
-      const input = document.createElement('input');
-      input.type = 'checkbox';
-      input.id = `input-${meta.key}`;
-      input.checked = Boolean(value);
-      input.disabled = disabled;
-
-      label.appendChild(input);
-      label.appendChild(document.createTextNode(` ${this.t.btnEnable}`));
-      return label;
-    }
-
-    // Display selector (dynamic options from system) - must come BEFORE generic select
-    if (meta.key === 'displayId') {
-      const select = document.createElement('select');
-      select.className = 'form-select';
-      select.id = `input-${meta.key}`;
-      select.disabled = disabled;
-
-      // Load displays dynamically (fire and forget: the <select> fills in later)
-      void this.loadDisplays(select, value);
-
-      // Show visual indicator when user changes selection
-      select.addEventListener('change', () => {
-        const selectedId = Number(select.value);
-        if (selectedId > 0) {
-          window.configAPI.showDisplayIndicator(selectedId).catch(console.error);
-        }
-      });
-
-      return select;
-    }
-
-    // Select dropdown (generic)
-    if (meta.type === 'select') {
-      const select = document.createElement('select');
-      select.className = 'form-select';
-      select.id = `input-${meta.key}`;
-      select.disabled = disabled;
-
-      for (const opt of meta.options || []) {
-        const option = document.createElement('option');
-        option.value = opt.value;
-        // Translate anchor options
-        if (meta.key === 'overlayAnchor') {
-          option.textContent = this.getAnchorLabel(opt.value);
-        } else {
-          option.textContent = opt.label;
-        }
-        option.selected = value === opt.value;
-        select.appendChild(option);
-      }
-
-      return select;
-    }
-
-    // Audio device selector (dynamic options from system)
-    if (meta.key === 'notificationSoundDevice') {
-      const select = document.createElement('select');
-      select.className = 'form-select';
-      select.id = `input-${meta.key}`;
-      select.disabled = disabled;
-
-      // Add default option
-      const defaultOption = document.createElement('option');
-      defaultOption.value = '';
-      defaultOption.textContent = this.t.audioDeviceDefault;
-      defaultOption.selected = !value;
-      select.appendChild(defaultOption);
-
-      // Load audio devices asynchronously (the <select> fills in later)
-      void this.loadAudioDevices(select, value as string);
-
-      return select;
-    }
-
-    // Volume slider
-    if (meta.key === 'notificationSoundVolume') {
-      const container = document.createElement('div');
-      container.className = 'form-range-container';
-
-      const range = document.createElement('input');
-      range.type = 'range';
-      range.className = 'form-range';
-      range.id = `input-${meta.key}`;
-      range.min = String(meta.min ?? 0);
-      range.max = String(meta.max ?? 100);
-      range.value = String(value ?? 50);
-      range.disabled = disabled;
-
-      const valueDisplay = document.createElement('span');
-      valueDisplay.className = 'form-range-value';
-      valueDisplay.id = `value-${meta.key}`;
-      valueDisplay.textContent = `${value ?? 50}%`;
-
-      // Update display when slider changes
-      range.addEventListener('input', () => {
-        valueDisplay.textContent = `${range.value}%`;
-      });
-
-      // Test sound button
-      const testBtn = document.createElement('button');
-      testBtn.type = 'button';
-      testBtn.className = 'btn btn--secondary btn--small';
-      testBtn.textContent = this.t.btnTestSound;
-      testBtn.id = 'testSoundBtn';
-      testBtn.disabled = disabled;
-
-      container.appendChild(range);
-      container.appendChild(valueDisplay);
-      container.appendChild(testBtn);
-
-      return container;
-    }
-
-    // Audio file picker with browse button
-    if (meta.key === 'notificationSoundFile') {
-      const container = document.createElement('div');
-      container.className = 'form-file-picker';
-
-      const pathDisplay = document.createElement('input');
-      pathDisplay.type = 'text';
-      pathDisplay.className = 'form-input form-input--file-path';
-      pathDisplay.id = `input-${meta.key}`;
-      pathDisplay.value = String(value ?? '');
-      pathDisplay.readOnly = true;
-      pathDisplay.disabled = disabled;
-      pathDisplay.placeholder = this.t.noFileSelected;
-
-      const browseBtn = document.createElement('button');
-      browseBtn.type = 'button';
-      browseBtn.className = 'btn btn--secondary btn--small';
-      browseBtn.textContent = this.t.btnSelectAudio;
-      browseBtn.id = 'selectAudioBtn';
-      browseBtn.disabled = disabled;
-
-      container.appendChild(pathDisplay);
-      container.appendChild(browseBtn);
-
-      return container;
-    }
-
-    // Text/number input (possibly with test button)
-    const container = document.createElement('div');
-    container.className = 'form-input-group';
-
-    const input = document.createElement('input');
-    input.className = 'form-input';
-    input.id = `input-${meta.key}`;
-    input.type = meta.type === 'number' ? 'number' : 'text';
-    input.value = Array.isArray(value) ? value.join(', ') : String(value ?? '');
-    input.disabled = disabled;
-
-    if (meta.placeholder) {
-      input.placeholder = meta.placeholder;
-    }
-    if (meta.min !== undefined) {
-      input.min = String(meta.min);
-    }
-    if (meta.max !== undefined) {
-      input.max = String(meta.max);
-    }
-
-    container.appendChild(input);
-
-    // Add Test Connection button for twitchChatUrl
-    if (meta.key === 'twitchChatUrl') {
-      const testBtn = document.createElement('button');
-      testBtn.type = 'button';
-      testBtn.className = 'btn btn--secondary btn--small';
-      testBtn.textContent = this.t.btnTest;
-      testBtn.id = 'testConnectionBtn';
-      testBtn.disabled = disabled;
-      container.appendChild(testBtn);
-    }
-
-    return container;
+  private setConfigValue(key: ConfigKey, value: unknown): void {
+    (this.config as unknown as Record<string, unknown>)[key] = value;
   }
 
   /**
@@ -889,11 +449,13 @@ class ConfigApp {
     const id = target.id;
     if (!id.startsWith('input-')) return;
 
-    const key = id.replace('input-', '');
+    const key = this.toConfigKey(id.replace('input-', ''));
+    if (!key) return;
+
     const meta = this.schema[key];
     if (!meta) return;
 
-    let value: any;
+    let value: unknown;
     if (target.type === 'checkbox') {
       value = (target).checked;
     } else {
@@ -901,7 +463,7 @@ class ConfigApp {
       value = window.configValues.coerceFieldValue(meta, target.value);
     }
 
-    this.config[key] = value;
+    this.setConfigValue(key, value);
     this.isDirty = true;
 
     // Update dependent fields when sound enabled checkbox changes
@@ -916,7 +478,7 @@ class ConfigApp {
    * Update the enabled/disabled state of sound-dependent fields.
    */
   private updateSoundDependentFields(soundEnabled: boolean): void {
-    for (const fieldKey of this.soundDependentFields) {
+    for (const fieldKey of window.configForm.SOUND_DEPENDENT_FIELDS) {
       const source = this.sources[fieldKey];
       const isOverridden = source === 'env' || source === 'cli';
 
@@ -982,7 +544,7 @@ class ConfigApp {
     this.errors = await window.configAPI.validate(this.config);
 
     // Update error displays
-    for (const key of Object.keys(this.schema)) {
+    for (const key of Object.keys(this.schema) as ConfigKey[]) {
       const errorEl = document.getElementById(`error-${key}`);
       const inputEl = document.getElementById(`input-${key}`);
 
@@ -1207,7 +769,7 @@ class ConfigApp {
    * Focus the first required field that's empty.
    */
   private focusFirstRequiredField(): void {
-    for (const [key, meta] of Object.entries(this.schema)) {
+    for (const [key, meta] of this.schemaFields()) {
       if (meta.required && !this.config[key]) {
         const input = document.getElementById(`input-${key}`);
         if (input) {
@@ -1215,90 +777,6 @@ class ConfigApp {
           break;
         }
       }
-    }
-  }
-
-  /**
-   * Load available displays and populate the select element.
-   */
-  private async loadDisplays(select: HTMLSelectElement, currentValue: unknown): Promise<void> {
-    try {
-      const displays = await window.configAPI.getDisplays();
-
-      // Configs written before displayId was coerced hold a numeric string.
-      const savedId = Number(currentValue);
-      const selectedId = Number.isFinite(savedId) ? savedId : 0;
-      const isKnown = displays.some((display) => display.id === selectedId);
-
-      for (const display of displays) {
-        const option = document.createElement('option');
-        option.value = String(display.id);
-        // Translate "Primary" label
-        if (display.isPrimary) {
-          option.textContent = `${display.bounds.width}x${display.bounds.height} (${this.t.displayPrimary})`;
-        } else {
-          option.textContent = display.label;
-        }
-        option.selected = isKnown ? display.id === selectedId : display.isPrimary;
-        select.appendChild(option);
-      }
-
-      // Keep the config in step with what the dropdown actually shows, so a
-      // disconnected monitor is not persisted back to disk.
-      const resolved = Number(select.value);
-      if (Number.isFinite(resolved)) {
-        this.config.displayId = resolved;
-      }
-
-      this.log(`Found ${displays.length} display(s)`);
-    } catch (err) {
-      console.error('Failed to enumerate displays:', err);
-      // Add a fallback "Primary" option
-      const option = document.createElement('option');
-      option.value = '0';
-      option.textContent = this.t.displayPrimary;
-      option.selected = true;
-      select.appendChild(option);
-    }
-  }
-
-  /**
-   * Load available audio output devices and populate the select element.
-   */
-  private async loadAudioDevices(select: HTMLSelectElement, currentValue: string): Promise<void> {
-    try {
-      // Request permission to enumerate devices (may require user gesture)
-      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioOutputs = devices.filter((d) => d.kind === 'audiooutput');
-
-        for (const device of audioOutputs) {
-          // Skip the default device as we already have a "System Default" option
-          if (device.deviceId === 'default') continue;
-
-          const option = document.createElement('option');
-          option.value = device.deviceId;
-          // Use label if available, otherwise show truncated device ID
-          option.textContent = device.label || `Audio Device (${device.deviceId.slice(0, 8)}...)`;
-          option.selected = device.deviceId === currentValue;
-          select.appendChild(option);
-        }
-
-        if (audioOutputs.length === 0) {
-          this.log('No audio output devices found');
-        } else {
-          this.log(`Found ${audioOutputs.length} audio output devices`);
-        }
-      } else {
-        this.log('mediaDevices.enumerateDevices not available');
-      }
-    } catch (err) {
-      console.error('Failed to enumerate audio devices:', err);
-      const errorOption = document.createElement('option');
-      errorOption.value = '';
-      errorOption.textContent = this.t.audioDeviceError;
-      errorOption.disabled = true;
-      select.appendChild(errorOption);
     }
   }
 

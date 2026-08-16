@@ -7,6 +7,8 @@ import assert from 'node:assert/strict';
 
 import { coerceFieldValue, isNumericSelect } from '../../src/renderer/config/scripts/configValues';
 import { CONFIG_SCHEMA } from '../../src/config/schema';
+import { resolveTargetDisplay } from '../../src/shared/displays';
+import type { AppConfig } from '../../src/config/types';
 
 test('coerce: number fields become numbers', () => {
   assert.equal(coerceFieldValue(CONFIG_SCHEMA.displaySeconds, '8'), 8);
@@ -64,4 +66,24 @@ test('isNumericSelect: only displayId qualifies in the current schema', () => {
     .map((field) => field.key);
 
   assert.deepEqual(numeric, ['displayId']);
+});
+
+test('regression: the typed path that displayId broke', () => {
+  // The wizard used to hold its configuration as Record<string, any>, so storing
+  // a <select> string into a field typed `number` was invisible to tsc. The
+  // config object is typed now, and this pins the coercion that goes with it.
+  const config: Partial<AppConfig> = {};
+  const raw = '2528732444'; // what the DOM hands back
+
+  const coerced = coerceFieldValue(CONFIG_SCHEMA.displayId, raw);
+  (config as Record<string, unknown>).displayId = coerced;
+
+  assert.equal(typeof config.displayId, 'number');
+  assert.equal(config.displayId, 2528732444);
+
+  // And the main process finds it, which is what actually broke.
+  assert.equal(
+    resolveTargetDisplay([{ id: 1 }, { id: 2528732444 }], config.displayId, { id: 1 }).id,
+    2528732444
+  );
 });

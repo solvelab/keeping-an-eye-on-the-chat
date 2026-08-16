@@ -65,21 +65,13 @@ module.exports = tseslint.config(
     },
   },
 
-  // The configuration wizard is a large `any`-typed form controller. Tightening
-  // its types is tracked separately; until then the rule would only produce
-  // noise that hides real findings. The triple-slash reference is deliberate:
-  // the wizard is loaded by a <script> tag with no module loader, so an `import`
+  // The wizard is loaded by a <script> tag with no module loader, so it picks up
+  // its ambient globals through a triple-slash reference; an `import` of a value
   // would emit a `require` the browser cannot resolve.
   {
     files: ['src/renderer/config/scripts/configApp.ts'],
     rules: {
       '@typescript-eslint/triple-slash-reference': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
 
