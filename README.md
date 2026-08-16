@@ -27,9 +27,9 @@
 ## 👁️ Preview
 
 <div align="center">
-<img src="printscreen/configuration-03.png" alt="Overlay Preview" width="450">
+<img src="printscreen/overlay-preview.gif" alt="The overlay in motion: messages arriving, the avatar speaking, and the platform each message came from" width="560">
 
-*Chat messages appear with an animated avatar and speech bubble*
+*One message at a time, the avatar lip-syncing while it "speaks", and a badge showing whether the message came from Twitch or Kick*
 </div>
 
 ## ✨ Features
