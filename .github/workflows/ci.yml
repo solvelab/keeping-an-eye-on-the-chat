@@ -4,12 +4,26 @@ on:
   push:
     branches:
       - master
+  pull_request:
+    branches:
+      - master
   workflow_dispatch:
 
+# Runs on the same ref queue instead of overlapping. Without this, merging a
+# stack of pull requests starts several semantic-release runs at once: they all
+# compute a version from the same tag and race to push it, so the losers fail on
+# a non-fast-forward push and the release state becomes ambiguous.
+#
+# cancel-in-progress is deliberately false. Cancelling a superseded run would
+# silently drop the release for the commit that started it, which is worse than
+# waiting a couple of minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+# Least privilege by default. Only the jobs that publish widen it.
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  contents: read
 
 jobs:
   lint:
@@ -45,7 +59,15 @@ jobs:
   release:
     name: Semantic Release
     needs: [lint]
+    # Never on a pull request: a PR must be validated, never published. The
+    # guard is explicit rather than implied by the trigger list, so adding a
+    # trigger later cannot accidentally publish from one.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     outputs:
       new_release: ${{ steps.semantic.outputs.new_release_published }}
       version: ${{ steps.semantic.outputs.new_release_version }}
@@ -78,8 +100,10 @@ jobs:
   build-windows:
     name: Electron Windows
     needs: [release]
-    if: needs.release.outputs.new_release == 'true'
+    if: github.event_name != 'pull_request' && needs.release.outputs.new_release == 'true'
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       # The release job pushed a "chore(release)" commit and a tag after this
       # workflow started, so the default checkout would build the pre-release
@@ -114,8 +138,10 @@ jobs:
   build-linux:
     name: Electron Linux
     needs: [release]
-    if: needs.release.outputs.new_release == 'true'
+    if: github.event_name != 'pull_request' && needs.release.outputs.new_release == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       # The release job pushed a "chore(release)" commit and a tag after this
       # workflow started, so the default checkout would build the pre-release

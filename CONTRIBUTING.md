@@ -213,17 +213,34 @@ function processMessage(message: any): any {
 Run the checklist:
 
 ```bash
-# 1. Type check passes
+# 1. Lint passes
+npm run lint
+
+# 2. Type check passes
 npm run typecheck
 
-# 2. Build succeeds
+# 3. Unit tests pass
+npm test
+
+# 4. Windows launchers still match build.productName
+npm run check-packaging
+
+# 5. Build succeeds
 npm run build:ts
 
-# 3. App runs correctly
+# 6. App runs correctly
 npm run start:diag
 
-# 4. Test with live Twitch chat if possible
+# 7. Test with live Twitch chat if possible
 ```
+
+### Required check
+
+Opening a pull request against `master` runs the **`Lint, typecheck & test`** job, which executes
+steps 1–5 above. It is the check that must be green before a pull request is merged, and it is the
+job to select if branch protection is enabled on this repository.
+
+Release and artifact jobs never run on a pull request — a PR is validated, never published.
 
 ### Pull Request Process
 
