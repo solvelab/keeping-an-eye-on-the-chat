@@ -64,6 +64,7 @@ jobs:
         with:
           extra_plugins: |
             @semantic-release/changelog
+            @semantic-release/npm
             @semantic-release/git
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -74,16 +75,19 @@ jobs:
     if: needs.release.outputs.new_release == 'true'
     runs-on: windows-latest
     steps:
+      # The release job pushed a "chore(release)" commit and a tag after this
+      # workflow started, so the default checkout would build the pre-release
+      # tree. Checking out the tag is what makes package.json carry the released
+      # version, which is why no manual "npm version" step is needed here.
       - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
           cache: "npm"
-
-      - name: Set version
-        run: npm version ${{ needs.release.outputs.version }} --no-git-tag-version
 
       - name: Install dependencies
         run: npm ci
@@ -107,16 +111,19 @@ jobs:
     if: needs.release.outputs.new_release == 'true'
     runs-on: ubuntu-latest
     steps:
+      # The release job pushed a "chore(release)" commit and a tag after this
+      # workflow started, so the default checkout would build the pre-release
+      # tree. Checking out the tag is what makes package.json carry the released
+      # version, which is why no manual "npm version" step is needed here.
       - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
           cache: "npm"
-
-      - name: Set version
-        run: npm version ${{ needs.release.outputs.version }} --no-git-tag-version
 
       - name: Install dependencies
         run: npm ci
